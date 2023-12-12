@@ -1,17 +1,3 @@
-<form method="POST"> 
-Mover para:  
-<?php 
-foreach($mail_load->folders as $folder){ 
-    $fname = str_replace('INBOX.', '', $folder->name);
-    if($fname != str_replace('INBOX.', '', $_SESSION['folder'])){
-?>
-    <button disabled class="btn btn-default" id="<?= str_replace('INBOX.', '', $folder->name) ?>" name="<?= str_replace('INBOX.', '', $folder->name) ?>" value=""><?= str_replace('INBOX.', '', $folder->name) ?></button>   
-<?php 
-    }
-}
-?> 
-</form>
-<br>
 <?php
 $page_size = intval($_SESSION['page_size']);
 $current_page = intval($_SESSION['page']);
@@ -29,26 +15,41 @@ $next_middle_page_hidden = ($last_page - $current_page) < 5;
 $last_page_hidden = ($last_page - $current_page) < 2;
 
 ?>
-<form method="POST"> 
+<form method="POST" style="float:left"> 
     Tamanho página:
-    <select style="height: 32px" name="page_size">;        
+    <select style="height: 32px" name="page_size">;         
         <option value="10" <?= $page_size == 10 ? 'selected' : '' ?>>10</option>
         <option value="25" <?= $page_size == 25 ? 'selected' : '' ?>>25</option>
         <option value="100" <?= $page_size == 100 ? 'selected' : '' ?>>100</option>
     </select>
     <button class="btn btn-default" type="submit">OK</button>
-    <div style="float:right">        
-        Página:
-        <button <?= $first_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="1">1</button>
-        <button <?= $previous_middle_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $previous_middle_page ?>"><?= $previous_middle_page ?></button>
-        <button <?= $previous_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $current_page - 1 ?>"><?= $current_page - 1 ?></button>
-        <button disabled class="btn btn-default" type="submit" name="page" value="<?= $current_page ?>"><?= $current_page ?></button>
-        <button <?= $next_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $current_page + 1?>"><?= $current_page + 1 ?></button>
-        <button <?= $next_middle_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $next_middle_page ?>"><?= $next_middle_page ?></button>
-        <button <?= $last_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $last_page ?>"><?= $last_page ?></button>        
-    </div>
 </form>
-
+<form method="POST" style="float:left; margin-left: 15px"> 
+    Mover Para:
+    <select style="height: 32px" name="movement_folder">;     
+        <?php 
+        foreach($mail_load->folders as $folder){             
+            if($folder->name != $_SESSION['folder']){
+        ?>
+            <option value="<?= $folder->name ?>"><?= str_replace('INBOX.', '', $folder->name) ?></option>             
+        <?php 
+            }
+        }
+        ?> 
+    </select>
+    <button class="btn btn-default" id="ids_to_move" name="ids_to_move" type="submit">OK</button>
+</form>
+<form method="POST" style="float:right">       
+    Página:
+    <button <?= $first_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="1">1</button>
+    <button <?= $previous_middle_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $previous_middle_page ?>"><?= $previous_middle_page ?></button>
+    <button <?= $previous_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $current_page - 1 ?>"><?= $current_page - 1 ?></button>
+    <button disabled class="btn btn-default" type="submit" name="page" value="<?= $current_page ?>"><?= $current_page ?></button>
+    <button <?= $next_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $current_page + 1?>"><?= $current_page + 1 ?></button>
+    <button <?= $next_middle_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $next_middle_page ?>"><?= $next_middle_page ?></button>
+    <button <?= $last_page_hidden ? 'style="display:none"' : '' ?> class="btn btn-default" type="submit" name="page" value="<?= $last_page ?>"><?= $last_page ?></button>            
+</form>
+<br>
 <br>
 <style>
 .hbtn:hover{ 
@@ -74,8 +75,8 @@ $last_page_hidden = ($last_page - $current_page) < 2;
         </thead>
         <tbody>                
             <?php                     
-            for($i = sizeof($mail_load->mail_list) - 1; $i >= 0; $i--){ 
-                $mail = $mail_load->mail_list[$i];
+            for($i = sizeof($mail_load->mail_list) - 1; $i >= 0; $i--){                 
+                $mail = $mail_load->mail_list[$i];                
             ?>                        
             <tr style="<?= $mail->unseen ? "font-weight: bold;" : "" ?>">
                 <td><input onchange="setUids()" id="<?= $mail->uid ?>" class="maillist" type="checkbox"/></td>
@@ -108,22 +109,6 @@ function setUids(){
             uids += an_mail.id;            
         }
     }   
-    <?php 
-    foreach($mail_load->folders as $folder){ 
-        $fname = str_replace('INBOX.', '', $folder->name);
-        if($fname != str_replace('INBOX.', '', $_SESSION['folder'])){
-    ?>              
-            an_button = document.getElementById("<?= $fname ?>");  
-            an_button.value = uids;
-            if(uids === ''){
-                an_button.setAttribute("disabled", true);
-            } else {
-                an_button.removeAttribute("disabled");
-            }
-    <?php 
-        }
-    } 
-    ?> 
-      
+    document.getElementById("ids_to_move").value = uids;
 }
 </script>

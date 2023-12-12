@@ -6,41 +6,43 @@ if(isset($_POST['sair'])){
   $_SESSION = array();
 }
 if(!isset($_POST['login']) && !isset($_SESSION['username'])){
+  $warning = "";
+  require_once "login.php";
+} else {  
 
-?>
-<html>
-    <header>
-      <link href="bootstrap-3.3.6/docs/dist/css/bootstrap.min.css" rel="stylesheet">
-      <style>
-        .form-signup { 
-          margin: auto; 
-          width: calc(100% / 3); 
-        }
-      </style>
-    </header>
-    <body>
-        <div class="container">            
-            <form method="POST" class="form-signup">          
-                <input name="username" value="teste@helpdesk.tec.br" type="text" class="form-control input-lg" placeholder="Usuário" required autofocus>
-                <input name="password" value="Senha@135" type="password" class="form-control input-lg" placeholder="Senha" required>                
-                <button type="submit" name="login" value="default" class="btn btn-primary btn-lg btn-block">Acessar</button>
-            </form>
-        </div>        
-    </body>
-</html>
-<?PHP
-exit;
-} else {
-               
-    $_SESSION['username'] = isset($_POST['username']) ? $_POST['username'] : $_SESSION['username'];
-    $_SESSION['mailbox'] = isset($_POST['mailbox']) ? $_POST['mailbox'] : 'mail.' . explode('@', $_SESSION['username'])[1];
-    $_SESSION['input_port'] = isset($_POST['input_port']) ? $_POST['input_port'] : '993';
-    $_SESSION['output_port'] = isset($_POST['output_port']) ? $_POST['output_port'] : '465';
-    $_SESSION['password'] = isset($_POST['password']) ? $_POST['password'] : $_SESSION['password'];    
-    $encryption = 'ssl';    
+  function getFromCsv($filepatch, $column_index, $value){
+    $file = fopen($filepatch, "r") or die("Unable to open file!");       
+    $csv = fread($file, filesize($filepatch));       
+    fclose($file);
+
+    $list = explode("\n", $csv);
+
+    for($i = 1; $i < sizeof($list); $i++){
+      $line = explode(";", $list[$i]);
+      if(trim($line[$column_index]) == trim($value)){
+        return $line;
+      }
+    }
+    return null;
+  }
+
+    if(isset($_POST['username'])){
+      $_SESSION['username'] = $_POST['username'];
+      $_SESSION['password'] = $_POST['password'];
+      $user_values = getFromCsv("usuarios.csv", 0, $_SESSION['username']);
+      $parametros = getFromCsv("parametros.csv", 0, $user_values[1]);
+
+      $_SESSION['mailbox'] = $parametros[1];
+      $_SESSION['input_port'] = $parametros[2];
+      $_SESSION['smtp'] = $parametros[3];
+      $_SESSION['output_port'] = $parametros[4];    
+    }
+                   
+    $encryption = 'ssl';            
            
     if(isset($_GET['folder'])){
       $_SESSION['folder'] = $_GET['folder'];
+      $_SESSION['page'] = 1;
     } else {
       if(!isset($_SESSION['folder'])){
         $_SESSION['folder'] = 'INBOX';
@@ -65,11 +67,14 @@ exit;
     }    
 }
 
-if(isset($_SESSION['username'])){
+if(isset($_SESSION['username'])){  
     require_once "Imap.php";
 
     $imap = new Imap($_SESSION['mailbox'] . ":" . $_SESSION['input_port'], $_SESSION['username'], $_SESSION['password'], $encryption);
-
+    if(!$imap->isConnected()){
+      $warning = "Usuário ou senha inválidos.";
+      require_once "login.php";
+    } 
     if(isset($_GET['attachment'])){
       require_once "download.php";
     }       
@@ -81,14 +86,11 @@ if(isset($_SESSION['username'])){
         $imap->addFolder('INBOX.' . $_POST['add_folder']);
     }
 
-    $folders = $imap->getFolders();
+    if(isset($_POST["movement_folder"])){          
+      $imap->mover($_POST["ids_to_move"], $_POST["movement_folder"]);      
+    }    
 
-    foreach($folders as $folder){     
-      $fname = str_replace('INBOX.', '', $folder);         
-      if(isset($_POST[$fname])){          
-        $imap->moveMessages(explode(',', $_POST[$fname]), $folder);
-      }
-    }
+    $folders = $imap->getFolders();    
 
     $mail_load = new stdClass;
     $mail_load->mail_list = array();

@@ -303,28 +303,9 @@ class Imap {
         return imap_expunge($this->imap);
     }
 
-
-    /**
-     * move given message in new folder
-     *
-     * @param int $id of the message
-     * @param string $target new folder
-     * @return bool success or not
-     */
-    public function moveMessage($id, $target) {
-        return $this->moveMessages(array($id), $target);
-    }
-
-
-    /**
-     * move given message in new folder
-     *
-     * @param array $ids array of message ids
-     * @param string $target new folder
-     * @return bool success or not
-     */
-    public function moveMessages($ids, $target) {
-        if (imap_mail_move($this->imap, implode(",", $ids), $target, CP_UID) === false)
+    
+    public function mover($ids, $target) {
+        if (imap_mail_move($this->imap, $ids, $target, CP_UID) === false)
             return false;
         return imap_expunge($this->imap);
     }

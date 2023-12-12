@@ -56,30 +56,31 @@ public class Email {
      * @param args[(even > 5)] attachment name of next param
      * @param args[(odd > 5)] attachment filename of previous param
      */
-    public static void main(String[] args) {         
-        
+    public static void main(String[] args) {                 
         List<FileAttributes> attachments = new ArrayList<>();        
         for(int i = 6; i < args.length; i = i + 2){  
             attachments.add(new FileAttributes(args[i], args[i + 1]));            
         }                    
-        
+
+        String message_body = "";
         try {                                    
             String message_body_filepatch = "temp/" + args[2] + "/message_body";
             File message_body_file = new File(message_body_filepatch);
             Scanner fileReader = new Scanner(message_body_file);
-            StringBuilder message_body = new StringBuilder();  
+            StringBuilder sb = new StringBuilder();  
             while (fileReader.hasNextLine()) {
-                message_body.append(fileReader.nextLine());                            
+                sb.append(fileReader.nextLine());                            
             }
-            fileReader.close();               
-            MessageSender.Send(args[0], args[1], args[2], args[3], args[4], "", args[5], message_body.toString(), attachments);                         
+            fileReader.close(); 
+            message_body = sb.toString();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Email.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {                 
+            MessageSender.Send(args[0], args[1], args[2], args[3], args[4], "", args[5], message_body, attachments);                         
         } catch (MessagingException ex) {
             Logger.getLogger(Email.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-        
+        }         
     }        
     
 }

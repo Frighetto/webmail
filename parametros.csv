@@ -1,0 +1,2 @@
+description;imap_host;input_door;smtp_host;output_door
+Helpdesk;mail.helpdesk.tec.br;993;mail.helpdesk.tec.br;465
