@@ -17,7 +17,8 @@ $last_page_hidden = ($last_page - $current_page) < 2;
 ?>
 <form method="POST" style="float:left"> 
     Tamanho página:
-    <select style="height: 32px" name="page_size">;         
+    <select style="height: 32px" name="page_size">    
+        <option value="2" <?= $page_size == 2 ? 'selected' : '' ?>>2</option>    
         <option value="10" <?= $page_size == 10 ? 'selected' : '' ?>>10</option>
         <option value="25" <?= $page_size == 25 ? 'selected' : '' ?>>25</option>
         <option value="100" <?= $page_size == 100 ? 'selected' : '' ?>>100</option>
@@ -70,19 +71,20 @@ $last_page_hidden = ($last_page - $current_page) < 2;
                 <th style="width: fit-content"><input onchange="select_all(this.checked)" type="checkbox"/></th>
                 <th style="width: fit-content">De</th>
                 <th style="width: 100%">Assunto</th>
-                <th style="width: fit-content">Data</th>                  
+                <th style="min-width: 127px">Data</th>                  
             </tr>
         </thead>
         <tbody>                
-            <?php                     
+            <?php 
+            require_once "datahora.php";
             for($i = sizeof($mail_load->mail_list) - 1; $i >= 0; $i--){                 
                 $mail = $mail_load->mail_list[$i];                
             ?>                        
             <tr style="<?= $mail->unseen ? "font-weight: bold;" : "" ?>">
-                <td><input onchange="setUids()" id="<?= $mail->uid ?>" class="maillist" type="checkbox"/></td>
+                <td><input onchange="setIds()" id="<?= $mail->id ?>" class="maillist" type="checkbox"/></td>
                 <td><?= $mail->from ?></td>
-                <td><form method="POST"><button class="hbtn" type="submit" name="uid" value="<?= $mail->uid ?>"><?= $mail->subject ?></button></form></td>
-                <td><?= $mail->date ?></td>                
+                <td><form method="POST"><button class="hbtn" type="submit" name="id" value="<?= $mail->id ?>"><?= $mail->subject ?></button></form></td>
+                <td><?= substr(string_data_formato_brasileiro($mail->date), 0, 16) ?></td>                
             </tr> </a>                          
             <?php } ?>               
         </tbody>
@@ -95,20 +97,20 @@ function select_all(select_all){
         an_mail = maillist[i];
         an_mail.checked = select_all;        
     } 
-    setUids();
+    setIds();
 }
-function setUids(){
+function setIds(){
     maillist = document.getElementsByClassName("maillist");
-    uids = '';
+    ids = '';
     for(i = 0; i < maillist.length; i = i + 1){
         an_mail = maillist[i];
         if(an_mail.checked){    
-            if(uids.length !== 0){
-                uids += ',';
+            if(ids.length !== 0){
+                ids += ',';
             }               
-            uids += an_mail.id;            
+            ids += an_mail.id;            
         }
     }   
-    document.getElementById("ids_to_move").value = uids;
+    document.getElementById("ids_to_move").value = ids;
 }
 </script>

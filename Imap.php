@@ -184,28 +184,16 @@ class Imap {
         for ($i=1;$i<=$count;$i++) {
             $emails[]= $this->formatMessage($i, $withbody);
         }
-
-        // sort emails descending by date
-        // usort($emails, function($a, $b) {
-        // try {
-        // $datea = new \DateTime($a['date']);
-        // $dateb = new \DateTime($b['date']);
-        // } catch(\Exception $e) {
-        // return 0;
-        // }
-        // if ($datea == $dateb)
-        // return 0;
-        // return $datea < $dateb ? 1 : -1;
-        // });
-
+      
         return $emails;
     }
 
-
+/*
     public function readMessage($uid){
         $id = imap_msgno($this->imap, $uid);
-
-        $header = imap_headerinfo($this->imap, $id);
+*/
+    public function readMessage($id){            
+        $header = imap_headerinfo($this->imap, intval($id));
 
         preg_match('/X-Priority: ([\d])/mi', imap_fetchheader($this->imap, $id), $matches);
         $priority = isset($matches[1]) ? $matches[1] : 3;
@@ -223,6 +211,7 @@ class Imap {
                 $subject .= $obj->text;
             }
         }
+        $uid = imap_uid($this->imap, $id);
         $subject = $this->convertToUtf8($subject);
         $email = array(
             'to'        => isset($header->to) ? $this->arrayToAddress($header->to) : '',
@@ -231,6 +220,7 @@ class Imap {
             'subject'   => $subject,
             'priority'  => $priority,
             'uid'       => $uid,
+            'id'       => $id,
             'flagged'   => strlen(trim($header->Flagged))>0,
             'unread'    => strlen(trim($header->Unseen))>0,
             'answered'  => strlen(trim($header->Answered))>0,
@@ -276,9 +266,6 @@ class Imap {
         return $email;
     }
 
-    
-
-
     /**
      * delete given message
      *
@@ -288,7 +275,6 @@ class Imap {
     public function deleteMessage($id) {
         return $this->deleteMessages(array($id));
     }
-
 
     /**
      * delete messages
@@ -302,14 +288,12 @@ class Imap {
         }
         return imap_expunge($this->imap);
     }
-
     
     public function mover($ids, $target) {
         if (imap_mail_move($this->imap, $ids, $target, CP_UID) === false)
             return false;
         return imap_expunge($this->imap);
-    }
-
+    }    
 
     /**
      * mark message as read
@@ -336,6 +320,10 @@ class Imap {
         return imap_setflag_full($this->imap, $id, trim($flags), ST_UID);
     }
 
+    public function getAttachmentByMessageIndex($messageIndex, $attachment_index = 0){
+        $uid = imap_uid($this->imap, $messageIndex);
+        return $this->getAttachment($uid, $attachment_index);
+    }
 
     /**
      * return content of messages attachment
@@ -492,7 +480,9 @@ class Imap {
         return imap_append($this->imap, $this->mailbox . $this->getSent(), $header . "\r\n" . $body . "\r\n", "\\Seen");
     }
 
-
+    public function save_sent($mailtxt){
+        imap_append($this->imap, "{imap.example.org}INBOX.Sent", $mailtxt);                  
+    }
     /**
      * explicitly close imap connection
      */
@@ -501,11 +491,6 @@ class Imap {
             imap_close($this->imap);
         }
     }
-
-
-
-    // protected helpers
-
 
     /**
      * get trash folder name or create new trash folder
@@ -860,7 +845,7 @@ class Imap {
         $header_object->id = $index;   
         $from = $header->from[0];
         $header_object->from = $from->mailbox . '@' . $from->host;
-        $header_object->date = $this->parse_date($header->date);
+        $header_object->date = $header->date;
         $header_object->flagged = strlen(trim($header->Flagged))>0;
         $header_object->unseen = strlen(trim($header->Unseen))>0;
         $header_object->answered = strlen(trim($header->Answered))>0;
@@ -868,69 +853,20 @@ class Imap {
         return $header_object;
     }
 
-    private function parse_date($date_str){
-        $month = [];
-        $month['Jan'] = '01';
-        $month['Feb'] = '02';
-        $month['Mar'] = '03';
-        $month['Apr'] = '04';
-        $month['May'] = '05';
-        $month['Jun'] = '06';
-        $month['Jul'] = '07';
-        $month['Aug'] = '08';
-        $month['Sep'] = '09';
-        $month['Oct'] = '10';
-        $month['Nov'] = '11';
-        $month['Dec'] = '12';
-        
-        $date_str = explode(' ', $date_str);        
-        $date_str = $date_str[1] . '/' . $month[$date_str[2]] . '/' . $date_str[3];
+   
+/*
+curl --insecure  --url "imaps://mail.helpdesk.tec.br/" --user "teste@helpdesk.tec.br:Senha@135" --request "EXAMINE INBOX"
 
-        return $date_str;
-    }
+curl --insecure  --url "imaps://mail.helpdesk.tec.br/INBOX;UID=83" --user "teste@helpdesk.tec.br:Senha@135"
 
-    public function enviar($from, $password, $to, $subject, $message){        
-        /*
-        $envelope["from"]= $from;
-        $envelope["to"]  = $to;
-        
-        $part1["type"] = TYPEMULTIPART;
-        $part1["subtype"] = "mixed";
+curl --insecure  --url "imaps://mail.helpdesk.tec.br/INBOX;UID=83;SECTION=HEADER.FIELDS%20(DATE%20FROM%20TO%20SUBJECT)" --user "teste@helpdesk.tec.br:Senha@135"
 
-        $filename = "/tmp/imap.c.gz";
-        $fp = fopen($filename, "r");
-        $contents = fread($fp, filesize($filename));
-        fclose($fp);
+curl --insecure  --url "imaps://mail.helpdesk.tec.br/INBOX;mailindex=1" --user "teste@helpdesk.tec.br:Senha@135"
 
-        $part2["type"] = TYPEAPPLICATION;
-        $part2["encoding"] = ENCBINARY;
-        $part2["subtype"] = "octet-stream";
-        $part2["description"] = basename($filename);
-        $part2["contents.data"] = $contents;
+curl --insecure  --url "imaps://mail.helpdesk.tec.br/INBOX;mailindex=[1-9];SECTION=HEADER.FIELDS%20(DATE%20FROM%20TO%20SUBJECT)" --user "teste@helpdesk.tec.br:Senha@135"
 
-        $part3["type"] = TYPETEXT;
-        $part3["subtype"] = "plain";
-        $part3["description"] = "description3";
-        $part3["contents.data"] = "contents.data3\n\n\n\t";
+curl --verbose --insecure --url "imaps://mail.helpdesk.tec.br/INBOX.Teste/" --user "teste@helpdesk.tec.br:Senha@135" -X "MOVE 1 INBOX"
 
-        $body[1] = $part1;
-        $body[2] = $part3;
-        //$body[3] = $part3;
-
-        $mail = imap_mail_compose($envelope, $body);
-
-        $headers =  'MIME-Version: 1.0' . "\r\n"; 
-        $headers .= 'From: Your name <teste@helpdesk.tec.br>' . "\r\n";
-        $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n"; 
-
-        ini_set('SMTP', "mail.helpdesk.tec.br");
-        ini_set('smtp_port', '465');        
-        ini_set('username', $from);
-        ini_set('password', $password);
-        ini_set('sendmail_from', $from);
-
-        imap_mail($to, $subject, $mail, $headers);
-        */
-
-    }
+curl --insecure  --url "imaps://mail.helpdesk.tec.br/INBOX;mailindex=[1-9];SECTION=HEADER" --user "teste@helpdesk.tec.br:Senha@135"
+*/
 }

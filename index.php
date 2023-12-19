@@ -1,6 +1,7 @@
 <?PHP
 
 session_start();
+
 if(isset($_POST['sair'])){
   session_destroy();
   $_SESSION = array();
@@ -35,8 +36,11 @@ if(!isset($_POST['login']) && !isset($_SESSION['username'])){
       $_SESSION['mailbox'] = $parametros[1];
       $_SESSION['input_port'] = $parametros[2];
       $_SESSION['smtp'] = $parametros[3];
-      $_SESSION['output_port'] = $parametros[4];    
-    }
+      $_SESSION['output_port'] = $parametros[4];   
+      
+      date_default_timezone_set("Europe/London"); 
+      //date_default_timezone_set("America/Sao_Paulo"); 
+    }    
                    
     $encryption = 'ssl';            
            
@@ -68,9 +72,22 @@ if(!isset($_POST['login']) && !isset($_SESSION['username'])){
 }
 
 if(isset($_SESSION['username'])){  
+  if(isset($_POST["movement_folder"])){   
+    $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}" . $_SESSION['folder'];  
+    $mailbox_instance = imap_open($mailbox, $_SESSION['username'], $_SESSION['password']) or die("Error opening mailbox: ".imap_last_error());  
+    
+    //move the email to our saved folder
+    $imapresult = imap_mail_move($mailbox_instance, $_POST["ids_to_move"], $_POST["movement_folder"]);
+    if ($imapresult == false) {
+        die(imap_last_error());
+    }
+    imap_close($mailbox_instance, CL_EXPUNGE);
+  }
+  
     require_once "Imap.php";
 
     $imap = new Imap($_SESSION['mailbox'] . ":" . $_SESSION['input_port'], $_SESSION['username'], $_SESSION['password'], $encryption);
+    
     if(!$imap->isConnected()){
       $warning = "Usuário ou senha inválidos.";
       require_once "login.php";
@@ -84,12 +101,8 @@ if(isset($_SESSION['username'])){
     }
     if(isset($_POST['add_folder'])) {
         $imap->addFolder('INBOX.' . $_POST['add_folder']);
-    }
-
-    if(isset($_POST["movement_folder"])){          
-      $imap->mover($_POST["ids_to_move"], $_POST["movement_folder"]);      
-    }    
-
+    }        
+    
     $folders = $imap->getFolders();    
 
     $mail_load = new stdClass;
@@ -121,8 +134,8 @@ if(isset($_SESSION['username'])){
     $mail_load->total = $count;
     
     $mail_list_start_index = (($_SESSION['page'] - 1) * $_SESSION['page_size']) + 1;
-    $mail_list_end_index = $mail_list_start_index + $_SESSION['page_size'];
-    $mail_list_end_index = $mail_list_end_index < $count ? $mail_list_end_index : $count + 1;              
+    $mail_list_end_index = $mail_list_start_index + $_SESSION['page_size'];   
+    $mail_list_end_index = $mail_list_end_index <= $count ? $mail_list_end_index : $count + 1;       
     for ($i = $mail_list_end_index - 1; $mail_list_start_index <= $i; $i = $i - 1) {         
         $mail_list_last_index = sizeof($mail_load->mail_list);
         if(isset($_POST['search'])){
@@ -225,7 +238,7 @@ if(isset($_SESSION['username'])){
         
         if(isset($_POST['write']) || isset($_POST['reply']) || isset($_POST['redirect'])) {  
           require_once "write.php";
-        } else if(isset($_POST['uid'])) {           
+        } else if(isset($_POST['id'])) {           
           require_once "read.php";
         } else if(isset($_POST['settings'])) {
           require_once "settings.php";

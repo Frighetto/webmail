@@ -1,63 +1,114 @@
 <?php
-    $filepatch = 'temp/' . $_SESSION['username'] . "/";
+$dir = 'temp/' . $_SESSION['username'] . "/";
 
-    if(!is_dir($filepatch)){ 
-        mkdir($filepatch);
+if(!is_dir($dir)){ 
+    mkdir($dir);
+}
+
+$filepatch = $dir . "mail.txt";
+
+$from = $_SESSION['username'];
+$password = $_SESSION['password'];
+$to = $_POST['to'];
+$subject = mb_encode_mimeheader($_POST['subject']);
+$smtp = trim($_SESSION['smtp']);
+$output_port = trim($_SESSION['output_port']);
+$date = date("D, d M Y H:i:s T");
+$content = $_POST['mail'];
+
+$to_str = '';
+foreach(explode(',', $to) as $an_rcpt){ 
+    $an_rcpt = trim($an_rcpt);
+    if($to_str != ''){
+        $to_str .= ",";
     }
+    $to_str .= "<$an_rcpt>";
+}  
 
-    $file = fopen($filepatch . "message_body", "w") or die("Unable to open file!");       
-    fwrite($file, $_POST['message_body']);       
-    fclose($file);       
+$mailtxt_attachment = "";
+$have_attachment = false;
+foreach ($_FILES as $attachment) {      
+    if($attachment["size"] > 0){ 
+        $have_attachment = true;
+        $filepatch = $attachment["tmp_name"];
+        $filename = $attachment["name"];    
+        $file = fopen($filepatch, "r") or die("Unable to open file!");       
+        $file_content = fread($file, filesize($filepatch));       
+        fclose($file);
+        $enconded_file = base64_encode($file_content);
 
-    $attachments = "";
-    foreach ($_FILES as $attachment) {  
-        $tmp_name = $attachment["tmp_name"];
-        $tmp_filename = "";
-        for($index = strlen($tmp_name) - 1; $index >= 0; $index = $index - 1){              
-            if($tmp_name[$index] == '\\'){ 
-                $tmp_filename = substr($tmp_name, $index + 1);                
-                break;
-            }
+        $mailtxt_attachment .=
+"
+--MULTIPART-ALTERNATIVE-BOUNDARY--
+--MULTIPART-MIXED-BOUNDARY
+Content-Disposition: attachment; filename=\"$filename\"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: base64
+
+$enconded_file";
+    }
+}      
+
+$mailtxt = "";
+if($have_attachment){    
+    $mailtxt =
+"From: <$from>
+To: $to_str
+Subject: $subject
+Date: $date
+Cc: 
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=\"MULTIPART-MIXED-BOUNDARY\"
+
+--MULTIPART-MIXED-BOUNDARY
+Content-Type: multipart/alternative; boundary=\"MULTIPART-ALTERNATIVE-BOUNDARY\"
+
+--MULTIPART-ALTERNATIVE-BOUNDARY
+Content-Type: text/html; charset=utf-8
+
+$content" . $mailtxt_attachment;
+} else {
+    $mailtxt =
+"From: <$from>
+To: $to_str
+Subject: $subject
+Date: $date
+Cc: 
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+$content";    
+}
+$file = fopen($filepatch, "w") or die("Unable to open file!");
+fwrite($file, $mailtxt);
+fclose($file);
+
+$mailrcpt = "";
+foreach(explode(',', $to) as $an_rcpt){ 
+    $an_rcpt = trim($an_rcpt);    
+    $mailrcpt .= " --mail-rcpt \"$an_rcpt\"";
+}
+
+$comand = "curl --ssl-reqd --url \"smtps://$smtp:$output_port\" --user \"$from:$password\" --mail-from \"$from\" $mailrcpt --upload-file $filepatch";
+
+exec($comand);      
+
+$imap->save_sent($mailtxt);
+
+delTree($dir);
+
+function delTree($dir) {
+
+    $files = array_diff(scandir($dir), array('.','..'));
+    
+        foreach ($files as $file) {
+    
+        (is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
+    
         }
-        
-        if($attachment["size"] > 0){
-            $attachments .= " \"" . $attachment["name"] . "\" \"" . "temp\\" . $_SESSION['username'] . "\\" . $tmp_filename . "\"";
-        }           
-
-        $comand = "copy " . $attachment["tmp_name"] . " " . "temp\\" . $_SESSION['username'] . "\\" . $tmp_filename;                  
-        shell_exec($comand);          
     
-    }            
-    $from = $_SESSION['username'];
-    $password = $_SESSION['password'];
-    $to = $_POST['to'];
-    $subject = $_POST['subject'];
-    $smtp = trim($_SESSION['smtp']);
-    $output_port = trim($_SESSION['output_port']);
-
-    $libs = "";
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        $libs = ".;activation-1.1.jar;javax.mail-1.6.0.jar";
-    } else {
-        $libs = ".:activation-1.1.jar:javax.mail-1.6.0.jar";
-    }
+        return rmdir($dir);
     
-    $comand = "java -cp \"$libs\" Email \"$smtp\" \"$output_port\" \"$from\" \"$password\" \"$to\" \"$subject\" $attachments";                        
-    shell_exec($comand);        
-    
-    delTree($filepatch);
+}
 
-    function delTree($dir) {
-
-        $files = array_diff(scandir($dir), array('.','..'));
-     
-         foreach ($files as $file) {
-     
-           (is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
-     
-         }
-     
-         return rmdir($dir);
-     
-    }
 ?>    

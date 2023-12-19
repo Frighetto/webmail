@@ -64,7 +64,7 @@ public class Email {
 
         String message_body = "";
         try {                                    
-            String message_body_filepatch = "temp/" + args[2] + "/message_body";
+            String message_body_filepatch = "temp/" + args[2] + "/message";
             File message_body_file = new File(message_body_filepatch);
             Scanner fileReader = new Scanner(message_body_file);
             StringBuilder sb = new StringBuilder();  
@@ -82,7 +82,6 @@ public class Email {
             Logger.getLogger(Email.class.getName()).log(Level.SEVERE, null, ex);
         }         
     }        
-    
 }
 
  class MessageSender {
@@ -91,10 +90,10 @@ public class Email {
     }
 
     /**
-     * Send email using GMail SMTP server.
+     * Send email using SMTP server.
      *
-     * @param username GMail username
-     * @param password GMail password
+     * @param username username
+     * @param password password
      * @param recipientEmail TO recipient
      * @param ccEmail CC recipient. Can be empty if there is no CC recipient
      * @param title title of the message

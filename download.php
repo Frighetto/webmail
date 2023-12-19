@@ -1,6 +1,5 @@
 <?php
-      
-  $attachment = $imap->getAttachment(intval($_GET['uid']), intval($_GET['attachment']));                  
+  $attachment = $imap->getAttachmentByMessageIndex(intval($_GET['id']), intval($_GET['attachment']));                  
   $filepatch = 'attachments/' . $attachment['name'];
 
   $file = fopen($filepatch, "w") or die("Unable to open file!");       
@@ -16,5 +15,6 @@
   header('Content-Length: ' . filesize($filepatch));
   flush(); 
   readfile($filepatch);
+  unlink($filepatch);
   die();                    
 ?>

@@ -118,7 +118,7 @@ if($selected_message != null){
                             }
                         </style>
                         <script src="https://cdn.ckeditor.com/ckeditor5/40.1.0/classic/ckeditor.js"></script>
-                        <textarea name="message_body" id="editor"><?php                             
+                        <textarea name="mail" id="editor"><?php                             
                             if($selected_message != null){
                             ?>
                             <br>
