@@ -2,14 +2,14 @@
     Diretório:
     <select style="height: 32px" name="remove_folder">  
     <?php 
-        foreach($mail_load->folders as $folder){ 
-            if($folder->name != 'INBOX'){ 
+    foreach($folders as $folder){             
+        if($folder != $_SESSION['folder']){
     ?>
-        <option value="<?= $folder->name; ?>"><?= str_replace('INBOX.', '', $folder->name); ?></option>
-    <?php   
-            } 
+        <option value="<?= $folder ?>"><?= str_replace("INBOX.", "", $folder) ?></option>             
+    <?php 
         }
-    ?>                      
+    }
+    ?>      
     </select>
     <button class="btn btn-danger" type="submit" name="settings" value="default">Deletar</button>    
 </form>

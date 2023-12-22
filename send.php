@@ -79,23 +79,34 @@ Content-Type: text/html; charset=utf-8
 
 $content";    
 }
-$file = fopen($filepatch, "w") or die("Unable to open file!");
-fwrite($file, $mailtxt);
-fclose($file);
 
-$mailrcpt = "";
-foreach(explode(',', $to) as $an_rcpt){ 
-    $an_rcpt = trim($an_rcpt);    
-    $mailrcpt .= " --mail-rcpt \"$an_rcpt\"";
+
+if(isset($_POST['draft'])){
+    imap_append($mailbox_instance, $mailbox . "INBOX.Drafts", $mailtxt);  
+} else {
+
+    $file = fopen($filepatch, "w") or die("Unable to open file!");
+    fwrite($file, $mailtxt);
+    fclose($file);
+
+    $mailrcpt = "";
+    foreach(explode(',', $to) as $an_rcpt){ 
+        $an_rcpt = trim($an_rcpt);    
+        $mailrcpt .= " --mail-rcpt \"$an_rcpt\"";
+    }
+
+    $comand = "curl --ssl-reqd --url \"smtps://$smtp:$output_port\" --user \"$from:$password\" --mail-from \"$from\" $mailrcpt --upload-file $filepatch";
+
+    exec($comand);      
+
+    imap_append($mailbox_instance, $mailbox . "INBOX.Sent", $mailtxt);  
+
+    if($_POST['send'] != "default" && substr($_POST['subject'], 0, 3) == 'Re:'){    
+        imap_setflag_full($mailbox_instance, $_POST['send'], '\\Answered');
+    }
+
+    delTree($dir);
 }
-
-$comand = "curl --ssl-reqd --url \"smtps://$smtp:$output_port\" --user \"$from:$password\" --mail-from \"$from\" $mailrcpt --upload-file $filepatch";
-
-exec($comand);      
-
-$imap->save_sent($mailtxt);
-
-delTree($dir);
 
 function delTree($dir) {
 

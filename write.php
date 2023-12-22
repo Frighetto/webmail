@@ -75,31 +75,44 @@
 </div>
 
 <?php 
-$selected_message = null;
+require_once 'parsemail.php';
+
 if(isset($_POST['reply'])){
-    $selected_message = $imap->readMessage($_POST['reply']);
-    $to = $selected_message['from'];
-    $subject = $selected_message['subject'];
+    $_POST['id'] = $_POST['reply'];
+    $header = imap_headerinfo($mailbox_instance, $_POST['reply']);
+    $header_object = parse_header($header);
+    $to = $header_object->from;
+    $subject = $header_object->subject;
     if(substr($subject, 0, strlen('Re: ')) != 'Re: '){
         $subject = 'Re: ' . $subject;
     }
 } else if(isset($_POST['redirect'])){
-    $selected_message = $imap->readMessage($_POST['redirect']);
-    $subject = $selected_message['subject'];
+    $_POST['id'] = $_POST['redirect'];
+    $header = imap_headerinfo($mailbox_instance, $_POST['redirect']);
+    $header_object = parse_header($header);    
+    $subject = $header_object->subject;   
     if(substr($subject, 0, strlen('Fwd: ')) != 'Fwd: '){
         $subject = 'Fwd: ' . $subject;
     }
+} else if(isset($_POST['edit'])){
+    $_POST['id'] = $_POST['edit'];
+    $header = imap_headerinfo($mailbox_instance, $_POST['edit']);
+    $header_object = parse_header($header);
+    $to = $header_object->from;
+    $subject = $header_object->subject;
 }
-if($selected_message != null){
-    
-}
+
 ?>
 <div class="col-md-12">
     <div class="card card-primary card-outline">        
         <form method="POST" enctype="multipart/form-data">
             <div style="margin-right: 1%; margin-bottom: 1%;">
-                <button id="send" type="submit" name="send" value="default" class="btn btn-primary"><i class="far fa-envelope"></i> Enviar</button>
-                <button id="draft" type="submit" name="draft" value="default" class="btn btn-default"><i class="fas fa-pencil-alt"></i> Rascunho</button>
+                <button id="send" type="submit" name="send" value="<?= isset($_POST['reply']) ? $_POST['id'] : "default" ?>" class="btn btn-primary">
+                    <i class="far fa-envelope"></i> Enviar
+                </button>
+                <button id="draft" type="submit" name="draft" value="default" class="btn btn-default">
+                    <i class="fas fa-pencil-alt"></i> Rascunho
+                </button>
             </div>
             <div class="card-body">            
                 <div class="form-group">
@@ -111,39 +124,30 @@ if($selected_message != null){
                 <div class="form-group">                    
                     <div class="note-editor note-frame card">                                       
                         <style>
-                            .ck-editor__editable[role="textbox"] {
-                                /* editing area */
+                            .ck-editor__editable[role="textbox"] {                               
                                 min-height: 360px;
                                 max-height: 360px;
                             }
                         </style>
                         <script src="https://cdn.ckeditor.com/ckeditor5/40.1.0/classic/ckeditor.js"></script>
-                        <textarea name="mail" id="editor"><?php                             
-                            if($selected_message != null){
+                        <textarea name="mail" id="editor">
+                            <?php  
+                            if(isset($_POST['edit']) || isset($subject)){
+                                if(isset($_POST['edit'])){
+                                    $load_body_only = true;
+                                }
+                                $cancel_attachments = true;
+                                if(!isset($_POST['edit'])){
                             ?>
-                            <br>
-                            <br>
-                            ------------------------------------------------------------------
-                            <div class="table-responsive mailbox-messages">               
-                                <div class="card-body">
-                                    <span><b>De: <?= $selected_message['from'] ?></b></span>
-                                    <br>
-                                    <span><b>Para: 
-                                    <?php foreach ($selected_message['to'] as $receiver) {
-                                        echo $receiver . '  ';
-                                    } ?></b></span>                                        
-                                    <br>
-                                    <span><b><?= $selected_message['date'] ?></b></span>
-                                    <br>
-                                    <h3><?= $selected_message['subject']?></h3>
-                                    <div style="border: solid">
-                                    <?= $selected_message['body'] ?>   
-                                    </div>
-                                </div>
-                            </div>
+                                <br>
+                                <br>
+                                ---------------------------------------------------------------------
                             <?php
-                            }
-                        ?></textarea>                    
+                                }
+                                require_once 'mailbody.php';
+                            }                             
+                            ?>
+                        </textarea>                    
                         <script>                        
                             ClassicEditor
                                 .create( document.querySelector( '#editor' ) )                               

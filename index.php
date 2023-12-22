@@ -27,126 +27,102 @@ if(!isset($_POST['login']) && !isset($_SESSION['username'])){
     return null;
   }
 
-    if(isset($_POST['username'])){
-      $_SESSION['username'] = $_POST['username'];
-      $_SESSION['password'] = $_POST['password'];
-      $user_values = getFromCsv("usuarios.csv", 0, $_SESSION['username']);
-      $parametros = getFromCsv("parametros.csv", 0, $user_values[1]);
+  if(isset($_POST['username'])){
+    $_SESSION['username'] = $_POST['username'];
+    $_SESSION['password'] = $_POST['password'];
+    $user_values = getFromCsv("usuarios.csv", 0, $_SESSION['username']);
+    $parametros = getFromCsv("parametros.csv", 0, $user_values[1]);
 
-      $_SESSION['mailbox'] = $parametros[1];
-      $_SESSION['input_port'] = $parametros[2];
-      $_SESSION['smtp'] = $parametros[3];
-      $_SESSION['output_port'] = $parametros[4];   
-      
-      date_default_timezone_set("Europe/London"); 
-      //date_default_timezone_set("America/Sao_Paulo"); 
-    }    
-                   
-    $encryption = 'ssl';            
-           
-    if(isset($_GET['folder'])){
-      $_SESSION['folder'] = $_GET['folder'];
+    $_SESSION['mailbox'] = $parametros[1];
+    $_SESSION['input_port'] = $parametros[2];
+    $_SESSION['smtp'] = $parametros[3];
+    $_SESSION['output_port'] = $parametros[4];   
+        
+    date_default_timezone_set("America/Sao_Paulo"); 
+  }                                     
+          
+  if(!isset($_SESSION['folder'])){
+    $_SESSION['folder'] = 'INBOX';
+  }
+  if(isset($_GET['folder']) && $_GET['folder'] != $_SESSION['folder']){
+    $_SESSION['folder'] = $_GET['folder'];
+    $_SESSION['page'] = 1;
+    unset($_SESSION['search']);
+  } 
+  if(isset($_POST['page'])){
+    $_SESSION['page'] = intval($_POST['page']);
+  } else {
+    if(!isset($_SESSION['page'])){
       $_SESSION['page'] = 1;
-    } else {
-      if(!isset($_SESSION['folder'])){
-        $_SESSION['folder'] = 'INBOX';
-      }
     }
-    if(isset($_POST['page'])){
-      $_SESSION['page'] = intval($_POST['page']);
+  }
+  if(isset($_POST['search'])){
+    if(trim($_POST['search']) == ''){
+      unset($_SESSION['search']);
     } else {
-      if(!isset($_SESSION['page'])){
-        $_SESSION['page'] = 1;
-      }
+      $_SESSION['search'] = $_POST['search'];
     }
-    if(isset($_POST['page_size'])){
-      if($_SESSION['page_size'] != intval($_POST['page_size'])){
-        $_SESSION['page_size'] = intval($_POST['page_size']);
-        $_SESSION['page'] = 1;
-      }
-    } else {
-      if(!isset($_SESSION['page_size'])){
-        $_SESSION['page_size'] = 10;
-      }
-    }    
+  } 
+  if(isset($_POST['page_size'])){
+    if($_SESSION['page_size'] != intval($_POST['page_size'])){
+      $_SESSION['page_size'] = intval($_POST['page_size']);
+      $_SESSION['page'] = 1;
+    }
+  } else {
+    if(!isset($_SESSION['page_size'])){
+      $_SESSION['page_size'] = 10;
+    }
+  }    
 }
 
 if(isset($_SESSION['username'])){  
-  if(isset($_POST["movement_folder"])){   
-    $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}" . $_SESSION['folder'];  
-    $mailbox_instance = imap_open($mailbox, $_SESSION['username'], $_SESSION['password']) or die("Error opening mailbox: ".imap_last_error());  
-    
-    //move the email to our saved folder
-    $imapresult = imap_mail_move($mailbox_instance, $_POST["ids_to_move"], $_POST["movement_folder"]);
-    if ($imapresult == false) {
-        die(imap_last_error());
-    }
-    imap_close($mailbox_instance, CL_EXPUNGE);
+
+  $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}";  
+  $mailbox_instance = imap_open($mailbox . $_SESSION['folder'], $_SESSION['username'], $_SESSION['password']);
+  if(!$mailbox_instance){ 
+    $warning = imap_last_error();
+    require_once "login.php";
   }
-  
-    require_once "Imap.php";
 
-    $imap = new Imap($_SESSION['mailbox'] . ":" . $_SESSION['input_port'], $_SESSION['username'], $_SESSION['password'], $encryption);
-    
-    if(!$imap->isConnected()){
-      $warning = "Usuário ou senha inválidos.";
-      require_once "login.php";
-    } 
-    if(isset($_GET['attachment'])){
-      require_once "download.php";
-    }       
+  if(isset($_POST['remove_folder'])) {     
+      imap_deletemailbox($mailbox_instance, $mailbox . $_POST['remove_folder']);
+  }
+  if(isset($_POST['add_folder'])) {    
+      imap_createmailbox($mailbox_instance, $mailbox . 'INBOX.' . $_POST['add_folder']);
+  }        
 
-    if(isset($_POST['remove_folder'])) {
-        $imap->removeFolder($_POST['remove_folder']);
-    }
-    if(isset($_POST['add_folder'])) {
-        $imap->addFolder('INBOX.' . $_POST['add_folder']);
-    }        
-    
-    $folders = $imap->getFolders();    
-
-    $mail_load = new stdClass;
-    $mail_load->mail_list = array();
-    $mail_load->folders = array();
-    $mail_load->page = $_SESSION['page'];
-    $mail_load->page_size = $_SESSION['page_size'];
-
-    foreach($folders as $folder){
-        $imap->selectFolder($folder);    
-        $overallMessages = $imap->countMessages();
-        $unreadMessages = $imap->countUnreadMessages();
-        $folder_count = new stdClass;
-        $folder_count->name = $folder;
-        $folder_count->unreadMessages = $unreadMessages;
-        $folder_count->overallMessages = $overallMessages;
-        $last_index = sizeof($mail_load->folders);
-        $mail_load->folders[$last_index] = $folder_count;
-    }
-
-    $count = null;
-    $imap->selectFolder($_SESSION['folder']);        
-    if(isset($_POST['search'])){
-      $search_result = $imap->searchByText($_POST['search']);        
-      $count = sizeof($search_result);
+  if(isset($_POST["movement_folder"])){    
+    if (imap_mail_move($mailbox_instance, $_POST["ids_to_move"], $_POST["movement_folder"])) {        
+        imap_expunge($mailbox_instance);
     } else {
-      $count = $imap->countMessages();
-    }     
-    $mail_load->total = $count;
-    
-    $mail_list_start_index = (($_SESSION['page'] - 1) * $_SESSION['page_size']) + 1;
-    $mail_list_end_index = $mail_list_start_index + $_SESSION['page_size'];   
-    $mail_list_end_index = $mail_list_end_index <= $count ? $mail_list_end_index : $count + 1;       
-    for ($i = $mail_list_end_index - 1; $mail_list_start_index <= $i; $i = $i - 1) {         
-        $mail_list_last_index = sizeof($mail_load->mail_list);
-        if(isset($_POST['search'])){
-          $mail_load->mail_list[$mail_list_last_index] = $imap->getHeader($folder, $search_result[$count - $i]); 
-        } else {
-          $mail_load->mail_list[$mail_list_last_index] = $imap->getHeader($folder, $count - $i + 1); 
-        }       
-    }
-   
-}
+      die(imap_last_error());
+    }  
+  }
 
+  if(isset($_POST["flag"])){    
+    if($_POST["flag"] == 'seen'){ 
+      imap_setflag_full($mailbox_instance, $_POST["ids_to_flag"], '\\Seen');  
+    } else if($_POST["flag"] == 'unseen'){ 
+      imap_clearflag_full($mailbox_instance, $_POST["ids_to_flag"], '\\Seen');  
+    }
+  }
+
+  if(isset($_POST["ids_to_delete"])){        
+    if($_SESSION['folder'] == 'INBOX.Trash'){
+      imap_setflag_full($mailbox_instance, $_POST["ids_to_delete"], '\\Deleted');  
+      imap_expunge($mailbox_instance);
+    } 
+  }
+
+  $folders = imap_list($mailbox_instance, $mailbox, "*");
+  $folders = str_replace($mailbox, "", $folders);  
+ 
+  $total_mails = imap_num_msg($mailbox_instance);  
+  $unread_mails = imap_search($mailbox_instance, 'UNSEEN');
+  $unread_mails = $unread_mails ? sizeof($unread_mails) : 0;
+
+}
+ 
 ?>
 
 <!DOCTYPE html>
@@ -179,7 +155,7 @@ if(isset($_SESSION['username'])){
         </div>
         <div id="navbar" class="navbar-collapse collapse">     
           <form class="navbar-form navbar-left" method="POST">
-            <input type="text" class="form-control" style="width:250%" name="search" placeholder="Search...">
+            <input type="text" class="form-control" style="width:250%" name="search" placeholder="Search..." value="<?= isset($_SESSION['search']) ? $_SESSION['search'] : '' ?>">
           </form>     
           <ul class="nav navbar-nav navbar-right">       
             <li>
@@ -209,41 +185,27 @@ if(isset($_SESSION['username'])){
           </form>
           <br>
           <ul class="nav nav-sidebar">
-            <?php 
-                function format_folder_label($folder){
-                    $folder_label = str_replace('INBOX.', '', $folder->name);
-                    if($folder->unreadMessages > 0){
-                        $folder_label = $folder_label . ' ' . $folder->unreadMessages;
-                    }
-                    return $folder_label;
-                }
-
-                foreach($mail_load->folders as $folder){
-                    if($_SESSION['folder'] == $folder->name){
-            ?>
-            <li class="active"><a href="?folder=<?= $folder->name ?>"><?= format_folder_label($folder);?> <span class="sr-only">(current)</span></a></li>
-            <?php
-                    } else {
-            ?>
-            <li><a href="?folder=<?= $folder->name ?>"><?= format_folder_label($folder); ?></a></li>
-            <?php
-                    }
-                }
-            ?>                       
+            <?php foreach($folders as $folder){  ?>
+            <li class="<?= $_SESSION['folder'] == $folder ? 'active' : '' ?>">
+              <a href="?folder=<?= $folder ?>">
+                <?= str_replace("INBOX.", "", $folder) ?><?= $_SESSION['folder'] == $folder ? " ($unread_mails/$total_mails)" : '' ?>
+              </a>
+            </li>
+            <?php } ?>                       
           </ul>          
         </div>
         <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">             
             
         <?php                         
         
-        if(isset($_POST['write']) || isset($_POST['reply']) || isset($_POST['redirect'])) {  
+        if(isset($_POST['write']) || isset($_POST['reply']) || isset($_POST['redirect']) || isset($_POST['edit'])) {  
           require_once "write.php";
         } else if(isset($_POST['id'])) {           
           require_once "read.php";
         } else if(isset($_POST['settings'])) {
           require_once "settings.php";
         } else {
-          if(isset($_POST['send'])){                                
+          if(isset($_POST['send']) || isset($_POST['draft'])){                                
             require_once "send.php";
           } 
           require_once "select.php";
