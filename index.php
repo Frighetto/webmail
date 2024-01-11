@@ -30,17 +30,43 @@ if(!isset($_POST['login']) && !isset($_SESSION['username'])){
   if(isset($_POST['username'])){
     $_SESSION['username'] = $_POST['username'];
     $_SESSION['password'] = $_POST['password'];
-    $user_values = getFromCsv("usuarios.csv", 0, $_SESSION['username']);
-    $parametros = getFromCsv("parametros.csv", 0, $user_values[1]);
-
-    $_SESSION['mailbox'] = $parametros[1];
-    $_SESSION['input_port'] = $parametros[2];
-    $_SESSION['smtp'] = $parametros[3];
-    $_SESSION['output_port'] = $parametros[4];   
-        
-    date_default_timezone_set("America/Sao_Paulo"); 
-  }                                     
+    require_once "database.php";    
+    $user_values = get_usuario($_SESSION['username']);    
+    if(isset($user_values) && $user_values['ativo'] == 1){
+      $parametros = get_parametro($user_values['parametro']);          
+      $_SESSION['mailbox'] = $parametros['imap_host'];
+      $_SESSION['input_port'] = $parametros['input_door'];
+      $_SESSION['smtp'] = $parametros['smtp_host'];
+      $_SESSION['output_port'] = $parametros['output_door'];   
           
+      date_default_timezone_set("America/Sao_Paulo"); 
+    } else {
+      $warning = "Usuário ou senha inválidos";
+      require_once "login.php";
+    }
+  }
+
+  /*
+  if(isset($_POST['username'])){
+    $_SESSION['username'] = $_POST['username'];
+    $_SESSION['password'] = $_POST['password'];
+    $user_values = getFromCsv("usuarios.csv", 0, $_SESSION['username']);
+    if(isset($user_values) && $user_values[4] == 'true'){
+      $parametros = getFromCsv("parametros.csv", 0, $user_values[1]);
+
+      $_SESSION['mailbox'] = $parametros[1];
+      $_SESSION['input_port'] = $parametros[2];
+      $_SESSION['smtp'] = $parametros[3];
+      $_SESSION['output_port'] = $parametros[4];   
+          
+      date_default_timezone_set("America/Sao_Paulo"); 
+    } else {
+      $warning = "Usuário ou senha inválidos";
+      require_once "login.php";
+    }
+  }                                     
+  */
+
   if(!isset($_SESSION['folder'])){
     $_SESSION['folder'] = 'INBOX';
   }
@@ -80,6 +106,7 @@ if(isset($_SESSION['username'])){
   $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}";  
   $mailbox_instance = imap_open($mailbox . $_SESSION['folder'], $_SESSION['username'], $_SESSION['password']);
   if(!$mailbox_instance){ 
+    session_destroy();
     $warning = imap_last_error();
     require_once "login.php";
   }

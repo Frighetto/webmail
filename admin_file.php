@@ -1,5 +1,19 @@
 <?PHP
+/*
 
+cadastro de empresas
+cadastro de pessoas nas empresas
+conta de empresas
+permissões de contas de empresas
+ativar e desativar contas
+
+dashboard - fazer pra conta de email ao em vez de admin sobre todas as contas 
+
+somente admin pode determinar se é editor
+quem é editor pode entrar no admin e cadastrar da propria empresa
+editor só pode excluir da propria empresa e que não é editor
+
+*/
 $admins = array();
 $adm = new stdClass;
 $adm->username = "teste@helpdesk.tec.br";
@@ -22,7 +36,21 @@ if(!isset($_POST['login']) && !isset($_SESSION['admin'])){
     require_once "login_admin.php";
 }
 
-require_once "database.php";    
+function getFromCsv($filepatch, $column_index, $value){
+    $file = fopen($filepatch, "r") or die("Unable to open file!");       
+    $csv = fread($file, filesize($filepatch));       
+    fclose($file);
+
+    $list = explode("\n", $csv);
+
+    for($i = 1; $i < sizeof($list); $i++){
+      $line = explode(";", $list[$i]);
+      if(trim($line[$column_index]) == trim($value)){
+        return $line;
+      }
+    }
+    return null;
+}
 
 $_SESSION['admin_logedin'] = isset($_SESSION['admin_logedin']) ? $_SESSION['admin_logedin'] : false;
 $_SESSION['is_editor'] = isset($_SESSION['is_editor']) ? $_SESSION['is_editor'] : false;
@@ -35,14 +63,14 @@ if(isset($_POST['admin'])){
         }
     }
     if(!$_SESSION['admin_logedin']){
-        $user_values = get_usuario($_SESSION['admin']);            
-        $_SESSION['is_editor'] = isset($user_values) && $user_values['editor'] == 1;
-        $is_ativo = isset($user_values) && $user_values['ativo'] == 1;
-        if($_SESSION['is_editor'] && $is_ativo){            
-            $parametros = get_parametro($user_values['parametro']);   
+        $user_values = getFromCsv("usuarios.csv", 0, $_SESSION['admin']);            
+        $_SESSION['is_editor'] = isset($user_values) && $user_values[3] == 'true';
+        $is_ativo = isset($user_values) && $user_values[4] == 'true';
+        if($_SESSION['is_editor'] && $is_ativo){
+            $parametros = getFromCsv("parametros.csv", 0, $user_values[1]);
         
-            $_SESSION['mailbox'] = $parametros['imap_host'];
-            $_SESSION['input_port'] = $parametros['input_door'];
+            $_SESSION['mailbox'] = $parametros[1];
+            $_SESSION['input_port'] = $parametros[2];
 
             $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}";  
             $mailbox_instance = imap_open($mailbox . 'INBOX', $_SESSION['admin'], $_SESSION['password']);
@@ -69,34 +97,127 @@ if(isset($_POST['tab'])){
     $_SESSION['tab'] = isset($_SESSION['tab']) ? $_SESSION['tab'] : "usuarios"; 
 }
 
+$file = fopen("usuarios.csv", "r") or die("Unable to open file!");       
+$usuarios = fread($file, filesize("usuarios.csv"));       
+fclose($file);
+
+$usuarios = explode("\n", $usuarios);
+
 if(isset($_POST['excluir_usuario'])){
-    remove_usuario($_POST['usuario']);    
+    $nova_lista = array();
+    for($i = 0; $i < sizeof($usuarios) - 1; $i++) {
+        $usuario = explode(";", $usuarios[$i]);
+        if($usuario[0] != $_POST['usuario']){
+            $nova_lista[sizeof($nova_lista)] = $usuarios[$i];            
+        }
+    }
+    $usuarios = $nova_lista;
 }
 
 if(isset($_POST['salvar_usuario'])){ 
+    $nova_lista = array();
+    for($i = 0; $i < sizeof($usuarios) - 1; $i++) {
+        $usuario = explode(";", $usuarios[$i]);
+        if($usuario[0] != $_POST['usuario']){
+            $nova_lista[sizeof($nova_lista)] = $usuarios[$i];            
+        }
+    }
+    $usuarios = $nova_lista;
+
     $usuario = $_POST['usuario'];
     $parametro = $_POST['parametro'];
     $empresa = $_POST['empresa'];
-    $editor = (isset($_POST['editor']) && $_POST['editor']) == 'on' ? 1 : 0;
-    $ativo = (isset($_POST['ativo']) && $_POST['ativo']) == 'on' ? 1 : 0;    
-    save_usuario($usuario, $parametro, $empresa, $editor, $ativo);    
+    $editor = (isset($_POST['editor']) && $_POST['editor']) == 'on' ? 'true' : 'false';
+    $ativo = (isset($_POST['ativo']) && $_POST['ativo']) == 'on' ? 'true' : 'false';    
+    $usuarios[sizeof($usuarios)] = $usuario . ";" . $parametro . ";" . $empresa . ";" . $editor . ";" . $ativo;
+}
+
+for($i = 1; $i < sizeof($usuarios); $i++) {
+    $usuarioa = explode(";", $usuarios[$i]);
+    for($j = $i + 1; $j < sizeof($usuarios); $j++) {
+        $usuariob = explode(";", $usuarios[$j]);        
+        if(strtoupper($usuarioa[0]) > strtoupper($usuariob[0])) {
+            $temp = $usuarios[$i];
+            $usuarios[$i] = $usuarios[$j];
+            $usuarios[$j] = $temp;
+            $i = 1;
+            break;
+        }
+    }   
+}
+
+$usuarios_str = "";
+for($i = 0; $i < sizeof($usuarios); $i++) {
+    if(trim($usuarios[$i]) != ""){
+        $usuarios_str = $usuarios_str . $usuarios[$i] . "\n";
+    }
+}
+
+$file = fopen("usuarios.csv", "w") or die("Unable to open file!");       
+fwrite($file, $usuarios_str);       
+fclose($file);
+
+$file = fopen("parametros.csv", "r") or die("Unable to open file!");       
+$parametros = fread($file, filesize("parametros.csv"));       
+fclose($file);
+
+$parametros = explode("\n", $parametros);
+
+$lista_parametros = array();
+
+for($i = 1; $i < sizeof($parametros) - 1; $i++) {
+    $parametro = explode(";", $parametros[$i]);
+    $lista_parametros[sizeof($lista_parametros)] = $parametro[0];
 }
 
 if(isset($_POST['excluir_parametro'])){
-    remove_parametro($_POST['description']);        
+    $nova_lista = array();
+    for($i = 0; $i < sizeof($parametros) - 1; $i++) {
+        $parametro = explode(";", $parametros[$i]);
+        if($parametro[0] != $_POST['description']){
+            $nova_lista[sizeof($nova_lista)] = $parametros[$i];            
+        }
+    }
+    $parametros = $nova_lista;
 }
 
 if(isset($_POST['salvar_parametro'])){  
-    $description = $_POST['description'];
-    $imap_host = $_POST['imap_host'];
-    $input_door = $_POST['input_door'];
-    $smtp_host = $_POST['smtp_host'];
-    $output_door = $_POST['output_door'];
-    save_parametro($description, $imap_host, $input_door, $smtp_host, $output_door);
+    $nova_lista = array();
+    for($i = 0; $i < sizeof($parametros) - 1; $i++) {
+        $parametro = explode(";", $parametros[$i]);
+        if($parametro[0] != $_POST['description']){
+            $nova_lista[sizeof($nova_lista)] = $parametros[$i];            
+        }
+    }
+    $parametros = $nova_lista;
+
+    $parametros[sizeof($parametros)] = $_POST['description'] . ";" . $_POST['imap'] . ";" . $_POST['input'] . ";" . $_POST['smtp'] . ";" . $_POST['output'];
 }
 
-$usuarios = get_usuarios();
-$parametros = get_parametros();
+for($i = 1; $i < sizeof($parametros); $i++) {
+    $parametroa = explode(";", $parametros[$i]);
+    for($j = $i + 1; $j < sizeof($parametros); $j++) {
+        $parametrob = explode(";", $parametros[$j]);        
+        if(strtoupper($parametroa[0]) > strtoupper($parametrob[0])) {
+            $temp = $parametros[$i];
+            $parametros[$i] = $parametros[$j];
+            $parametros[$j] = $temp;
+            $i = 1;
+            break;
+        }
+    }   
+}
+
+$parametros_str = "";
+for($i = 0; $i < sizeof($parametros); $i++) {    
+    if(trim($parametros[$i]) != ""){
+        $parametros_str = $parametros_str . $parametros[$i] . "\n";
+    }
+}
+
+$file = fopen("parametros.csv", "w") or die("Unable to open file!");       
+fwrite($file, $parametros_str);       
+fclose($file);
 
 ?>
 
@@ -167,17 +288,17 @@ $parametros = get_parametros();
                 </thead>
                 <tbody> 
                     <?php 
-                    for($i = 0; $i < sizeof($usuarios); $i++) {
-                        $usuario = $usuarios[$i];                        
-                        if(($_SESSION['admin_logedin'] || $usuario['empresa'] == $_SESSION['empresa'])){
+                    for($i = 1; $i < sizeof($usuarios); $i++) {
+                        $usuario = explode(";", $usuarios[$i]);
+                        if(sizeof($usuario) > 1 && ($_SESSION['admin_logedin'] || $usuario[2] == $_SESSION['empresa'])){
                     ?> 
                     <tr>
                         <form method="POST">
-                            <td><input readonly name="usuario" class="form-control" value="<?= $usuario["usuario"] ?>"></td>
-                            <td><input readonly name="parametro" class="form-control" value="<?= $usuario["parametro"] ?>"></td>
-                            <td><input readonly name="empresa" class="form-control" value="<?= $usuario["empresa"] ?>"></td>
-                            <td><input disabled name="editor" type="checkbox" class="form-control" <?= $usuario["editor"] == 1 ? 'checked' : '' ?>></td>
-                            <td><input disabled name="ativo" type="checkbox" class="form-control" <?= $usuario["ativo"] == 1 ? 'checked' : '' ?>></td>
+                            <td><input readonly name="usuario" class="form-control" value="<?= $usuario[0] ?>"></td>
+                            <td><input readonly name="parametro" class="form-control" value="<?= $usuario[1] ?>"></td>
+                            <td><input readonly name="empresa" class="form-control" value="<?= $usuario[2] ?>"></td>
+                            <td><input disabled name="editor" type="checkbox" class="form-control" <?= $usuario[3] == 'true' ? 'checked' : '' ?>></td>
+                            <td><input disabled name="ativo" type="checkbox" class="form-control" <?= $usuario[4] == 'true' ? 'checked' : '' ?>></td>
                             <td><button name="excluir_usuario" class="btn btn-danger form-control">excluir</button></td>
                         </form>
                     </tr> 
@@ -187,8 +308,8 @@ $parametros = get_parametros();
                             <td><input name="usuario" class="form-control" value=""></td>
                             <td>
                                 <select style="height: 32px; width: 100%" name="parametro"> 
-                                <?php for($j = 0; $j < sizeof($parametros); $j++) { ?> 
-                                    <option value="<?= $parametros[$j]['description'] ?>" ><?= $parametros[$j]['description'] ?></option>
+                                <?php for($j = 0; $j < sizeof($lista_parametros); $j++) { ?> 
+                                    <option value="<?= trim($lista_parametros[$j]) ?>" ><?= $lista_parametros[$j] ?></option>
                                 <?php } ?>
                                 </select>
                             </td>
@@ -214,27 +335,28 @@ $parametros = get_parametros();
                 </thead>
                 <tbody> 
                     <?php 
-                    for($i = 0; $i < sizeof($parametros); $i++) {
-                        $parametro = $parametros[$i];                    
+                    for($i = 1; $i < sizeof($parametros); $i++) {
+                        $parametro = explode(";", $parametros[$i]);
+                        if(sizeof($parametro) > 1){
                     ?> 
                     <tr>
                         <form method="POST">
-                            <td><input readonly name="description" class="form-control" value="<?= $parametro["description"] ?>"></td>
-                            <td><input readonly name="imap_host" class="form-control" value="<?= $parametro["imap_host"] ?>"></td>
-                            <td><input readonly name="input_door" class="form-control" style="width: 100px" value="<?= $parametro["input_door"] ?>"></td>
-                            <td><input readonly name="smtp_host" class="form-control" value="<?= $parametro["smtp_host"] ?>"></td>
-                            <td><input readonly name="output_door" class="form-control" style="width: 100px" value="<?= $parametro["output_door"] ?>"></td>                            
+                            <td><input readonly name="description" class="form-control" value="<?= $parametro[0] ?>"></td>
+                            <td><input readonly name="imap" class="form-control" value="<?= $parametro[1] ?>"></td>
+                            <td><input readonly name="input" class="form-control" style="width: 100px" value="<?= $parametro[2] ?>"></td>
+                            <td><input readonly name="smtp" class="form-control" value="<?= $parametro[3] ?>"></td>
+                            <td><input readonly name="output" class="form-control" style="width: 100px" value="<?= $parametro[4] ?>"></td>                            
                             <td><button name="excluir_parametro" class="btn btn-danger form-control">excluir</button></td>
                         </form>
                     </tr> 
-                    <?php } ?>
+                    <?php } } ?>
                     <tr>
                         <form method="POST">
                             <td><input name="description" class="form-control" value=""></td>
-                            <td><input name="imap_host" class="form-control" value=""></td>
-                            <td><input name="input_door" class="form-control" style="width: 100px" value=""></td>
-                            <td><input name="smtp_host" class="form-control" value=""></td>
-                            <td><input name="output_door" class="form-control" style="width: 100px" value=""></td>
+                            <td><input name="imap" class="form-control" value=""></td>
+                            <td><input name="input" class="form-control" style="width: 100px" value=""></td>
+                            <td><input name="smtp" class="form-control" value=""></td>
+                            <td><input name="output" class="form-control" style="width: 100px" value=""></td>
                             <td><button name="salvar_parametro" class="btn btn-success form-control">salvar</button></td>                            
                         </form>
                     </tr>

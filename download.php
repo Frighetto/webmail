@@ -4,8 +4,9 @@
   
   $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}";  
   $mailbox_instance = imap_open($mailbox . $_SESSION['folder'], $_SESSION['username'], $_SESSION['password']);
-  $partStruct = imap_bodystruct($mailbox_instance, $_GET['id'], $_GET['attachment']);  
-  $content = imap_fetchbody($mailbox_instance, $_GET['id'], $_GET['attachment']);
+  $partStruct = imap_bodystruct($mailbox_instance, $_GET['id'], $_GET['partNum']);  
+  $content = imap_fetchbody($mailbox_instance, $_GET['id'], $_GET['partNum']);
+
   $encoding = $partStruct->encoding;
   if($encoding == 1){
     $content = imap_8bit($content);

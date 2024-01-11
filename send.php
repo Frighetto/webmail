@@ -1,4 +1,5 @@
 <?php
+
 $dir = 'temp/' . $_SESSION['username'] . "/";
 
 if(!is_dir($dir)){ 
@@ -14,7 +15,7 @@ $subject = mb_encode_mimeheader($_POST['subject']);
 $smtp = trim($_SESSION['smtp']);
 $output_port = trim($_SESSION['output_port']);
 $date = date("D, d M Y H:i:s T");
-$content = $_POST['mail'];
+$content = $_POST['selectedwriter'] == 'mail' ? $_POST['mail'] : $_POST['mailhtml'];
 
 $to_str = '';
 foreach(explode(',', $to) as $an_rcpt){ 

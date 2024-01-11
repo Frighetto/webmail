@@ -1,0 +1,9 @@
+From: <teste@helpdesk.tec.br>
+To: <teste@helpdesk.tec.br>
+Subject: video
+Date: Fri, 29 Dec 2023 20:08:59 CET
+Cc: 
+MIME-Version: 1.0
+Content-Type: text/html; charset=utf-8
+
+<p>a</p><figure class="media"><oembed url="https://www.youtube.com/watch?v=Qj7IYSn0uKA"></oembed></figure><p>b</p>

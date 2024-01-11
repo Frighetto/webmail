@@ -60,6 +60,52 @@
 
     };
 
+    function addimage() {
+        var endereco = document.getElementById('enderecoimage').value;
+        if(endereco != ""){
+            var image = document.createElement("img");            
+                image.src = endereco;   
+                var largura = document.getElementById('largura-imagem').value;
+                var altura = document.getElementById('altura-imagem').value;            
+                if(largura != ""){
+                    image.width = largura; 
+                }      
+                if(altura != ""){
+                    image.width = altura; 
+                }             
+                document.getElementById('htmlcode').value += image.outerHTML;
+                document.getElementById('closeimage').click();
+                updatehtmlresult();
+        } else {
+            var file = document.getElementById('fileimage').files[0];        
+            var reader = new FileReader();        
+            reader.onload = function(e) {
+                var image = document.createElement("img");            
+                image.src = e.target.result;   
+                var largura = document.getElementById('largura-imagem').value;
+                var altura = document.getElementById('altura-imagem').value;            
+                if(largura != ""){
+                    image.width = largura; 
+                }      
+                if(altura != ""){
+                    image.width = altura; 
+                }             
+                document.getElementById('htmlcode').value += image.outerHTML;
+                document.getElementById('closeimage').click();
+                updatehtmlresult();
+            }        
+            reader.readAsDataURL(file);  
+        }      
+    }
+
+    function resetaddimage(){
+        document.getElementById('enderecoimage').value = null;
+        document.getElementById('fileimage').value = null;
+        document.getElementById('largura-imagem').value = null;
+        document.getElementById('altura-imagem').value = null;
+    }
+   
+
 </script>
 <div class="form-group" id="anexosextras" hidden>
   
@@ -103,6 +149,43 @@ if(isset($_POST['reply'])){
 }
 
 ?>
+<style>    
+    .my-fluid-container {
+        padding-left: 15px;
+        padding-right: 15px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .modal-backdrop {
+        position: relative;
+        z-index: -1;
+    }
+</style>
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h4 class="modal-title">Inserir Imagem</h4>
+            </div>
+            <div class="modal-body">
+                <input id="fileimage" class="form-control" type="file">
+                <br>
+                <input id="enderecoimage" class="form-control" type="text" placeholder="url">
+                <br>
+                <div>
+                <input id="largura-imagem" style="width: 30%; float: left; margin-right: 15px" placeholder="Largura" class="form-control">
+                <input id="altura-imagem" style="width: 30%" placeholder="Altura" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+            <button id="closeimage" type="button" class="btn btn-default" data-dismiss="modal">Fechar</button>
+            <button onclick="addimage()" type="button" class="btn btn-primary">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="col-md-12">
     <div class="card card-primary card-outline">        
         <form method="POST" enctype="multipart/form-data">
@@ -114,14 +197,19 @@ if(isset($_POST['reply'])){
                     <i class="fas fa-pencil-alt"></i> Rascunho
                 </button>
             </div>
+            <input id="selectedwriter" value="mail" name="selectedwriter" hidden>
             <div class="card-body">            
                 <div class="form-group">
                     <input class="form-control" placeholder="Destinatário" value="<?= isset($to) ? $to : '' ?>" name="to" required>
                 </div>
                 <div class="form-group">
                     <input class="form-control" maxlength="100" placeholder="Assunto" value="<?= isset($subject) ? $subject : '' ?>" name="subject">
-                </div>              
-                <div class="form-group">                    
+                </div>     
+                <div style="">    
+                    <button id="btnshowtext" style="width: 49%; margin-left: 0px;" onclick="showtext()" class="btn btn-primary btn-lg" type="button">Texto</button>        
+                    <button id="btnshowhtml" style="width: 49%; margin-right: 0px;" onclick="showhtml()" class="btn btn-default btn-lg" type="button">HTML</button> 
+                </div>                                                   
+                <div class="form-group" id="texteditor">                    
                     <div class="note-editor note-frame card">                                       
                         <style>
                             .ck-editor__editable[role="textbox"] {                               
@@ -148,16 +236,61 @@ if(isset($_POST['reply'])){
                             }                             
                             ?>
                         </textarea>                    
-                        <script>                        
+                        <script>          
+                            var myEditor;   
                             ClassicEditor
-                                .create( document.querySelector( '#editor' ) )                               
-                                .catch( error => {
-                                    console.error( error );
-                                } );                           
+                                .create( document.querySelector( '#editor' ) )
+                                .then( editor => {       
+                                    editor.editorConfig = function( config ){
+                                        config.allowedContent = true;  
+                                    }                     
+                                    myEditor = editor;                                    
+                                } )
+                                .catch( err => {
+                                    console.error( err.stack );
+                                } );  
+                                
+                                function showhtml(){
+                                    document.getElementById('texteditor').setAttribute('hidden', true);
+                                    document.getElementById('htmleditor').removeAttribute('hidden');
+                                    document.getElementById('btnshowhtml').setAttribute('class', 'btn btn-primary btn-lg');
+                                    document.getElementById('btnshowtext').setAttribute('class', 'btn btn-default btn-lg');
+
+                                    document.getElementById('htmlcode').value = myEditor.getData(); 
+                                     
+                                    updatehtmlresult();
+                                    document.getElementById('selectedwriter').value = "mailhtml";
+                                    
+                                }
+
+                                function showtext(){
+                                    document.getElementById('htmleditor').setAttribute('hidden', true);
+                                    document.getElementById('texteditor').removeAttribute('hidden');
+                                    document.getElementById('btnshowhtml').setAttribute('class', 'btn btn-default btn-lg');
+                                    document.getElementById('btnshowtext').setAttribute('class', 'btn btn-primary btn-lg');
+
+                                    myEditor.setData(document.getElementById('htmlcode').value);
+                                    document.getElementById('selectedwriter').value = "mail";
+                                } 
+
+                                function updatehtmlresult(){
+                                    document.getElementById('htmlresult').innerHTML = document.getElementById('htmlcode').value;
+                                }
                         </script>                      
                     </div>
-                </div>
-                                
+                </div> 
+                <div id="htmleditor" hidden>
+                    <button onclick="resetaddimage()" data-toggle="modal" href="#imageModal" class="btn btn-default" type="button">
+                        Inserir Imagem
+                    </button>     
+                    <div>           
+                        <textarea name="mailhtml" oninput="updatehtmlresult()" id="htmlcode" class="form-group" style="float: left; width: 49%; min-height: 360px; max-height: 360px;" contenteditable>
+                        </textarea> 
+                        <div id="htmlresult" class="form-group" style="border: dotted; float:left; width: 49%; min-height: 360px; max-height: 360px; overflow: auto">
+                        </div>
+                    <div> 
+                </div>        
+                
                 <div class="form-group" id="anexos">
                     <div class="row mb-3">
                         <label for="data" class="col-sm-2 col-form-label">
