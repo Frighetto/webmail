@@ -1,9 +1,11 @@
 <?php
- 
+  header("Access-Control-Allow-Origin: *");
+  header("Access-Control-Allow-Headers: *");
+
   session_start();
   
   $mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}";  
-  $mailbox_instance = imap_open($mailbox . $_SESSION['folder'], $_SESSION['username'], $_SESSION['password']);
+  $mailbox_instance = imap_open($mailbox . $_GET['folder'], $_SESSION['username'], $_SESSION['password']);
   $partStruct = imap_bodystruct($mailbox_instance, $_GET['id'], $_GET['partNum']);  
   $content = imap_fetchbody($mailbox_instance, $_GET['id'], $_GET['partNum']);
 
@@ -21,8 +23,13 @@
     $content = quoted_printable_decode($content);
   }
   $filename = $partStruct->dparameters[0]->value;  
+
+  $dir = 'attachments/';
+  if(!is_dir($dir)){ 
+      mkdir($dir);
+  }
   
-  $filepatch = 'attachments/' . $filename;
+  $filepatch =  $dir . $filename;
 
   $file = fopen($filepatch, "w") or die("Unable to open file!");       
   fwrite($file, $content);       
@@ -38,5 +45,6 @@
   flush(); 
   readfile($filepatch);
   unlink($filepatch);
+  
   die();                    
 ?>

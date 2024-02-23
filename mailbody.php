@@ -16,11 +16,11 @@
         echo embedImages($attachments, $body);
 
         foreach($attachments as $attachment){            
-        ?>        
-        <a href="download.php?id=<?= $_POST['id'] ?>&partNum=<?= $attachment['partNum'] ?>">
+        ?>   
+        <br>     
+        <a href="<?= isset($download_uri) ? $download_uri : "download.php" ?>?id=<?= $_POST['id'] ?>&partNum=<?= $attachment['partNum'] ?>&folder=<?= $_SESSION['folder'] ?>">
             <?= $attachment['name'] ?>
-        </a>        
-        <br>
+        </a>                
         <?php
         }
               

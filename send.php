@@ -1,5 +1,23 @@
 <?php
 
+$dir = 'new_mail/';
+
+if(!is_dir($dir)){ 
+    mkdir($dir);
+}
+
+$dir = 'new_mail/' . $_SESSION['username'] . "/";
+
+if(!is_dir($dir)){ 
+    mkdir($dir);
+}
+
+$dir = 'temp/';
+
+if(!is_dir($dir)){ 
+    mkdir($dir);
+}
+
 $dir = 'temp/' . $_SESSION['username'] . "/";
 
 if(!is_dir($dir)){ 
@@ -31,6 +49,7 @@ $have_attachment = false;
 foreach ($_FILES as $attachment) {      
     if($attachment["size"] > 0){ 
         $have_attachment = true;
+        $filesize = $attachment["size"];
         $filepatch = $attachment["tmp_name"];
         $filename = $attachment["name"];    
         $file = fopen($filepatch, "r") or die("Unable to open file!");       
@@ -45,10 +64,40 @@ foreach ($_FILES as $attachment) {
 Content-Disposition: attachment; filename=\"$filename\"
 Content-Type: application/octet-stream
 Content-Transfer-Encoding: base64
+size=$filesize
 
 $enconded_file";
     }
-}      
+}     
+
+$imagefiles = glob('new_mail/' . $_SESSION['username'] . '/*');
+
+foreach ($imagefiles as $imagefilepatch) {
+    $have_attachment = true;
+    $filesize = filesize($imagefilepatch);
+    $filepatch = $imagefilepatch;
+    $filename = substr($imagefilepatch, strlen('new_mail/' . $_SESSION['username'] . '/'));
+    $mimetype = mime_content_type($imagefilepatch);
+
+    $file = fopen($filepatch, "r") or die("Unable to open file!");       
+    $file_content = fread($file, filesize($filepatch));       
+    fclose($file);
+    $enconded_file = base64_encode($file_content);
+
+    $mailtxt_attachment .=
+"
+--MULTIPART-ALTERNATIVE-BOUNDARY--
+--MULTIPART-MIXED-BOUNDARY
+Content-Disposition: inline; filename=\"$filename\"
+Content-Type: $mimetype;
+Content-Transfer-Encoding: base64
+Content-ID: <$imagefilepatch>
+
+$enconded_file";
+
+$content = str_replace($imagefilepatch, "cid:$imagefilepatch", $content);
+
+}
 
 $mailtxt = "";
 if($have_attachment){    
@@ -81,7 +130,6 @@ Content-Type: text/html; charset=utf-8
 $content";    
 }
 
-
 if(isset($_POST['draft'])){
     imap_append($mailbox_instance, $mailbox . "INBOX.Drafts", $mailtxt);  
 } else {
@@ -96,8 +144,7 @@ if(isset($_POST['draft'])){
         $mailrcpt .= " --mail-rcpt \"$an_rcpt\"";
     }
 
-    $comand = "curl --ssl-reqd --url \"smtps://$smtp:$output_port\" --user \"$from:$password\" --mail-from \"$from\" $mailrcpt --upload-file $filepatch";
-
+    $comand = "curl --ssl-reqd --url \"smtps://$smtp:$output_port\" --user \"$from:$password\" --mail-from \"$from\" $mailrcpt --upload-file $filepatch";    
     exec($comand);      
 
     imap_append($mailbox_instance, $mailbox . "INBOX.Sent", $mailtxt);  
@@ -106,6 +153,9 @@ if(isset($_POST['draft'])){
         imap_setflag_full($mailbox_instance, $_POST['send'], '\\Answered');
     }
 
+    delTree($dir);
+    
+    $dir = 'new_mail/' . $_SESSION['username'] . "/";
     delTree($dir);
 }
 

@@ -1,4 +1,5 @@
 <?php   
+
 $search_criteria = isset($_SESSION['search']) ? ('SUBJECT "' . $_SESSION['search'] . '"') : 'ALL';
 $mail_index_list = imap_search($mailbox_instance, $search_criteria); 
 $list_size = $mail_index_list == false ? 0 : sizeof($mail_index_list);
@@ -72,6 +73,8 @@ $last_page_hidden = ($last_page - $current_page) < 2;
         <select style="height: 32px" name="flag">;   
             <option value="seen">Lido</option>
             <option value="unseen">Não Lido</option> 
+            <option value="flag">&#9873;</option>
+            <option value="unflag">&#9872;</option> 
         </select>
         <button class="btn btn-default" id="ids_to_flag" name="ids_to_flag" type="submit">OK</button>
     </form>    
@@ -106,6 +109,7 @@ $last_page_hidden = ($last_page - $current_page) < 2;
             <th style="width: fit-content"><input onchange="select_all(this.checked)" type="checkbox"/></th>
             <th style="width: fit-content">De</th>
             <th style="width: 100%">Assunto</th>
+            <th style="width: fit-content">&#9873;</th>
             <th style="min-width: 127px">Data</th>                  
         </tr>
     </thead>
@@ -119,7 +123,8 @@ $last_page_hidden = ($last_page - $current_page) < 2;
             <td><input onchange="setIds()" id="<?= $mail->id ?>" class="maillist" type="checkbox"/></td>
             <td><?= $mail->from ?></td>
             <td><form method="POST"><button class="hbtn" type="submit" name="id" value="<?= $mail->id ?>"><?= $mail->subject ?></button></form></td>
-            <td><?= $mail->date ?></td>                
+            <td><?= $mail->flagged ? '&#9873;' : '&#9872;' ?></td>
+            <td><?= $mail->date ?></td> 
         </tr> </a>                          
         <?php } ?>               
     </tbody>

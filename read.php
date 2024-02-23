@@ -34,6 +34,8 @@ imap_setflag_full($mailbox_instance, $_POST['id'], '\\Seen');
     <select style="height: 32px" name="flag">;   
         <option value="seen">Lido</option>
         <option value="unseen">Não Lido</option> 
+        <option value="flag">&#9873;</option>
+        <option value="unflag">&#9872;</option> 
     </select>
     <button class="btn btn-default" id="ids_to_flag" name="ids_to_flag" value="<?= $_POST['id'] ?>" type="submit">OK</button>
 </form>

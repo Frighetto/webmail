@@ -76,25 +76,42 @@
                 document.getElementById('htmlcode').value += image.outerHTML;
                 document.getElementById('closeimage').click();
                 updatehtmlresult();
-        } else {
+        } else {             
+            
             var file = document.getElementById('fileimage').files[0];        
             var reader = new FileReader();        
             reader.onload = function(e) {
-                var image = document.createElement("img");            
-                image.src = e.target.result;   
-                var largura = document.getElementById('largura-imagem').value;
-                var altura = document.getElementById('altura-imagem').value;            
-                if(largura != ""){
-                    image.width = largura; 
-                }      
-                if(altura != ""){
-                    image.width = altura; 
-                }             
-                document.getElementById('htmlcode').value += image.outerHTML;
-                document.getElementById('closeimage').click();
-                updatehtmlresult();
+
+                var http_request = new XMLHttpRequest();			
+                http_request.open("POST", 'upload.php', true);	    
+                http_request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');		
+                http_request.onload = function(e) {
+
+                    var image = document.createElement("img");            
+                    image.src = http_request.response;
+                    var largura = document.getElementById('largura-imagem').value;
+                    var altura = document.getElementById('altura-imagem').value;            
+                    if(largura != ""){
+                        image.width = largura; 
+                    }      
+                    if(altura != ""){
+                        image.width = altura; 
+                    }             
+                    document.getElementById('htmlcode').value += image.outerHTML;
+                    document.getElementById('closeimage').click();
+                    updatehtmlresult();
+
+                }     
+
+                var params = 'name=' + encodeURIComponent(file['name']);    
+                params = params + '&size=' + encodeURIComponent(file['size']); 
+                params = params + '&type=' + encodeURIComponent(file['type']); 
+                params = params + '&content=' + encodeURIComponent(e.target.result); 
+                http_request.send(params); 
+                                
             }        
             reader.readAsDataURL(file);  
+            
         }      
     }
 
@@ -288,7 +305,7 @@ if(isset($_POST['reply'])){
                         </textarea> 
                         <div id="htmlresult" class="form-group" style="border: dotted; float:left; width: 49%; min-height: 360px; max-height: 360px; overflow: auto">
                         </div>
-                    <div> 
+                    </div> 
                 </div>        
                 
                 <div class="form-group" id="anexos">

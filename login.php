@@ -11,8 +11,8 @@
     <body>
         <div class="container">            
             <form method="POST" class="form-signup">          
-                <input name="username" value="" type="text" class="form-control input-lg" placeholder="Usuário" required autofocus>
-                <input name="password" value="" type="password" class="form-control input-lg" placeholder="Senha" required>                                
+                <input name="username" value="teste@teleatendimento.com.br" type="text" class="form-control input-lg" placeholder="Usuário" required autofocus>
+                <input name="password" value="&lBCEyO8,C*y" type="password" class="form-control input-lg" placeholder="Senha" required>                                
                 <button type="submit" name="login" value="default" class="btn btn-primary btn-lg btn-block">Acessar</button>
                 <?= $warning ?>
             </form>                        

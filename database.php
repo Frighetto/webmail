@@ -7,14 +7,14 @@ User：sql_webmail_pfm_
 Password：c6c8XjrP6GbBhTGA
 
 */
-/*
+
 $ip = "127.0.0.1";			    
 $database_username = "sql_webmail_pfm_";	
 $database_password = "c6c8XjrP6GbBhTGA";		
 $database = "sql_webmail_pfm_";	    
 
 $port = 3306;
-*/
+
 
 $ip = "127.0.0.1";			    
 $database_username = "root";	
@@ -41,22 +41,29 @@ function query_result($sql, $list = true){
     return $list ? $result : (sizeof($result) == 1 ? $result[0] : null);   
 }
 
-function get_usuario($usuario){
-    global $mysqli;
-    $sql = "SELECT usuario, parametro, empresa, editor, ativo FROM usuarios WHERE UPPER('$usuario') = UPPER(usuario)";
+function get_secret_ids(){ 
+    return query_result("SELECT secret_identifier FROM usuarios");
+}
+
+function get_usuario($usuario){    
+    $sql = "SELECT usuario, parametro, empresa, senha, permissao, ativo, secret_identifier FROM usuarios WHERE UPPER('$usuario') = UPPER(usuario)";
     return query_result($sql, false);
 }
 
-function get_usuarios(){
-    global $mysqli;
-    $sql = "SELECT usuario, parametro, empresa, editor, ativo FROM usuarios ORDER BY usuario";
+function get_usuario_by_id($id){    
+    $sql = "SELECT usuario, parametro, empresa, senha, permissao, ativo, secret_identifier FROM usuarios WHERE '$id' = secret_identifier";    
+    return query_result($sql, false);
+}
+
+function get_usuarios(){    
+    $sql = "SELECT usuario, parametro, empresa, senha, permissao, ativo FROM usuarios ORDER BY usuario";
     return query_result($sql);
 }
 
-function save_usuario($usuario, $parametro, $empresa, $editor, $ativo){
+function save_usuario($usuario, $parametro, $empresa, $senha, $permissao, $ativo){
     global $mysqli;
     remove_usuario($usuario);
-    $sql = "INSERT INTO usuarios (usuario, parametro, empresa, editor, ativo) VALUES ('$usuario', '$parametro', '$empresa', $editor, $ativo)";
+    $sql = "INSERT INTO usuarios (usuario, parametro, empresa, senha, permissao, ativo) VALUES ('$usuario', '$parametro', '$empresa', '$senha', '$permissao', $ativo)";
     $mysqli->query($sql);    
 }
 
@@ -66,14 +73,12 @@ function remove_usuario($usuario){
     $mysqli->query($sql);  
 }
 
-function get_parametro($parametro){
-    global $mysqli;
+function get_parametro($parametro){    
     $sql = "SELECT description, imap_host, input_door, smtp_host, output_door FROM parametros WHERE UPPER('$parametro') = UPPER(description)";    
     return query_result($sql, false);
 }
 
-function get_parametros(){
-    global $mysqli;
+function get_parametros(){    
     $sql = "SELECT description, imap_host, input_door, smtp_host, output_door FROM parametros ORDER BY description";    
     return query_result($sql);
 }
@@ -90,5 +95,40 @@ function remove_parametro($description){
     $sql = "DELETE FROM parametros WHERE UPPER(description) = UPPER('$description')";
     $mysqli->query($sql);  
 }
+
+function get_usuarios_parametros(){    
+    $sql = 
+    "SELECT     usuario,
+                senha,
+                description, 
+                imap_host, 
+                input_door, 
+                smtp_host, 
+                output_door                
+    FROM        usuarios
+    LEFT JOIN   parametros
+        ON      parametros.description = usuarios.parametro";    
+    return query_result($sql);
+}
+
+function update_secret_identifiers(){
+    global $mysqli;
+    $usuarios = query_result("SELECT usuario FROM usuarios");
+    for($i = 0; $i < sizeof($usuarios); $i = $i + 1){
+        $usuario = $usuarios[$i]["usuario"];
+        $new_secret_identifier = new_secret_identifier();
+        $sql = "UPDATE usuarios SET secret_identifier = '$new_secret_identifier' WHERE usuario = '$usuario'";
+        $mysqli->query($sql);  
+    }
+}
+
+function new_secret_identifier(){
+    $chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    $new_secret_identifier = "";
+    for($i = 0; $i < 100; $i = $i + 1){        
+      $new_secret_identifier = $new_secret_identifier . $chars[rand(0, strlen($chars) - 1)];
+    }
+    return $new_secret_identifier;
+  }
 
 ?>

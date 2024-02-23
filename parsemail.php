@@ -19,15 +19,20 @@ function parse_header($header){
     $header_object = new stdClass;
     $header_object->subject = $subject;         
 
+    $header_object->fromaddress = $header->fromaddress;
     $from = $header->from[0];
     $header_object->from = $from->mailbox . '@' . $from->host;
-    $to = '';
-    foreach($header->to as $receiver){
-        if($to != ''){
-            $to .= ", ";
+    $to = '';    
+    foreach($header->to as $receiver){               
+        if(isset($receiver->mailbox) && $receiver->mailbox != "undisclosed-recipients"){
+            if($to != ''){
+                $to .= ", ";
+            }
+            $to .= $receiver->mailbox . '@' . $receiver->host;
         }
-        $to .= $receiver->mailbox . '@' . $receiver->host;
     }
+    
+    $header_object->toaddress = $to != '' ? $header->toaddress : '';    
     $header_object->to = $to;
     $header_object->date = substr(string_data_formato_brasileiro($header->date), 0, 16);
     $header_object->flagged = strlen(trim($header->Flagged))>0;
