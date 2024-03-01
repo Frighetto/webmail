@@ -1,6 +1,7 @@
 <html>
     <header>
       <link href="bootstrap-3.3.6/docs/dist/css/bootstrap.min.css" rel="stylesheet">
+      <link rel="icon" href="email.png"> 
       <style>
         .form-signup { 
           margin: auto; 
