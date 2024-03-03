@@ -3,6 +3,8 @@
 header("Access-Control-Allow-Origin: http://localhost:3000");
 header("Access-Control-Allow-Headers: http://localhost:3000");
 
+date_default_timezone_set("America/Sao_Paulo"); 
+
 if(isset($_GET['action']) && $_GET['action'] == "getLoginID"){
     require_once "database.php";   
     echo json_encode(get_secret_ids());
@@ -12,25 +14,23 @@ if(isset($_GET['action']) && $_GET['action'] == "getLoginID"){
 if(isset($_POST['loginid'])){
     require_once "database.php";        
     $user_values = get_usuario_by_id($_POST['loginid']);      
-    $_SESSION['username'] = $user_values['usuario'];
-    $_SESSION['password'] = $user_values['senha'];
-    $_SESSION['folder'] = isset($_POST['folder']) ? $_POST['folder'] : "INBOX";    
+    $username = $user_values['usuario'];
+    $password = $user_values['senha'];
+    $folder = isset($_POST['folder']) ? $_POST['folder'] : "INBOX";    
      
     if(isset($user_values) && $user_values['ativo'] == 1){
         $parametros = get_parametro($user_values['parametro']);          
-        $_SESSION['mailbox'] = $parametros['imap_host'];
-        $_SESSION['input_port'] = $parametros['input_door'];
-        $_SESSION['smtp'] = $parametros['smtp_host'];
-        $_SESSION['output_port'] = $parametros['output_door'];   
-            
-        date_default_timezone_set("America/Sao_Paulo"); 
+        $mailbox = $parametros['imap_host'];
+        $input_port = $parametros['input_door'];
+        $smtp = $parametros['smtp_host'];
+        $output_port = $parametros['output_door'];                       
     } else {
         exit;
     }
 }
 
-$mailbox = "{" . $_SESSION['mailbox'] . ":" . $_SESSION['input_port'] . "/imap/ssl/novalidate-cert". "}";  
-$mailbox_instance = imap_open($mailbox . $_SESSION['folder'], $_SESSION['username'], $_SESSION['password']);
+$mailbox = "{" . $mailbox . ":" . $input_port . "/imap/ssl/novalidate-cert". "}";  
+$mailbox_instance = imap_open($mailbox . $folder, $username, $password);
 
 if($_POST['action'] == "getDataSource"){
 
@@ -81,7 +81,7 @@ if($_POST['action'] == "getDataSource"){
         require_once 'datahora.php';
         require_once 'parsemail.php';
 
-        $search_criteria = isset($_SESSION['search']) ? ('SUBJECT "' . $_SESSION['search'] . '"') : 'ALL';
+        $search_criteria = 'ALL';
         
         $mail_index_list = imap_search($mailbox_instance, $search_criteria); 
         $list_size = $mail_index_list == false ? 0 : sizeof($mail_index_list);
@@ -125,8 +125,8 @@ if($_POST['action'] == "getDataSource"){
     $response = new stdClass;
     $response->messageDataSourceNew = $mail_info_list;
     $response->folderData = $folders_attributes;
-    $response->userName = $_SESSION['username'];
-    $response->userMail = $_SESSION['username'];
+    $response->userName = $username;
+    $response->userMail = $username;
     $response->folders_full_name = $folders_full_name;
     $response->server_uri = $_SERVER["REQUEST_SCHEME"] . "://" . $_SERVER["SERVER_NAME"] . ":" . $_SERVER["SERVER_PORT"] . $_SERVER["REQUEST_URI"];
 
@@ -209,13 +209,14 @@ if($_POST['action'] == "deletefolder"){
 }
 
 if($_POST['action'] == "createfolder"){
-    imap_createmailbox($mailbox_instance, $mailbox . 'INBOX.' . $_POST['add_folder']);
+    $new_folder = $_POST['parent_folder'] != "" ? $_POST['parent_folder'] . "." . $_POST['add_folder'] : $_POST['add_folder'];
+    imap_createmailbox($mailbox_instance, $mailbox . $new_folder);    
     echo "created";
 }
 
 if($_POST['action'] == "rename_folder"){
     imap_rename($mailbox_instance, $mailbox . $_POST['renamed_folder'], $mailbox . $_POST['new_folder_name']);
-    echo "reanmed";
+    echo "renamed";
 }
 
 ?>

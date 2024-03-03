@@ -9,6 +9,7 @@ if(isset($_POST['sair'])){
 if(!isset($_POST['login']) && !isset($_SESSION['admin'])){
     $warning = "";
     require_once "login_admin.php";
+    exit;
 }
 
 require_once "database.php";    
@@ -33,10 +34,12 @@ if(isset($_POST['admin'])){
       if(!$mailbox_instance){ 
           $warning = imap_last_error();
           require_once "login_admin.php";
+          exit;
       }
   } else {
       $warning = "Usuário ou senha inválidos";
       require_once "login_admin.php";
+      exit;
   }
   $_SESSION['empresa'] = $user_values['empresa'];
 }
