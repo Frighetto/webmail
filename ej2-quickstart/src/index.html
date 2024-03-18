@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Essential JS 2 Rich Text Editor</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+        <meta name="description" content="Essential JS 2" />
+        <meta name="author" content="Syncfusion" />
+        <link rel="shortcut icon" href="resources/favicon.ico" />
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+        <style>
+            iframe {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <textarea id="defaultRTE" style="height: 360px;"></textarea>  
+        <script>         
+            window.addEventListener('message', event => {             
+                if (event.origin === 'http://localhost:3000') {    
+                    let message_data = event.data;                    
+                    message_data = message_data.split(':');                    
+                    if(message_data[0] === 'messageSender'){ 
+                        let username = message_data[1];
+                        let form_data = {};                        
+                        let body = document.getElementById("defaultRTE_rte-edit-view");                        
+                        let imgs = body.getElementsByTagName("img");                        
+                        let i = 0;
+                        var refreshIntervalId1 = setInterval(function(){                            
+                            if(i < imgs.length){
+                                let img = imgs[i];                                                                                                                                                                               
+                                var image = new Image();
+                                image.src = img.src;
+                                image.onload = function() {
+                                    var canvas = document.createElement("canvas");
+                                    canvas.setAttribute("hidden", true);
+                                    document.getElementsByTagName("body")[0].appendChild(canvas);
+                                    canvas.getContext;
+                                    var ctx = canvas.getContext("2d");
+                                    ctx.canvas.width = image.width;
+                                    ctx.canvas.height = image.height;                                
+                                    ctx.drawImage(image, 0, 0, image.width, image.height);
+                                    var myImage = canvas.toDataURL("image/png");
+                                    form_data[img.alt] = myImage; 
+                                    img.setAttribute("src", "new_mail/" + username + "/" + img.alt);
+                                }                            
+                                i++                                
+                            } else {
+                                clearInterval(refreshIntervalId1);
+                            }              
+                        }, 50);                                             
+                        var refreshIntervalId = setInterval(function(){                            
+                            if(Object.keys(form_data).length == imgs.length){
+                                form_data['mailhtml'] = btoa(body.innerHTML);                            
+                                let str = JSON.stringify(form_data);                            
+                                window.parent.postMessage(str, "*");  
+                                clearInterval(refreshIntervalId);
+                            }                            
+                        }, 360);                                                      
+                    } else if(message_data[0] === 'messageContent'){ 
+                        document.getElementById("defaultRTE_rte-edit-view").innerHTML = (event.data + "").substring('messageContent:'.length);
+                    }
+                } 
+            });
+            var body = document.getElementsByTagName("body")[0];          
+            setTimeout(function(){            
+                //body.childNodes[5].innerHTML = '';
+                //body.childNodes[5].removeAttribute("style");                               
+            }, 1000);                                  
+        </script>  
+    </body>
+</html>
