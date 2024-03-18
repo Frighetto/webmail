@@ -1,4 +1,0 @@
-description;imap_host;input_door;smtp_host;output_door
-Helpdesk;mail.helpdesk.tec.br;993;mail.helpdesk.tec.br;465
-Outlook;outlook.office365.com;993;smtp-mail.outlook.com;587
-Teleatendimento;mail.teleatendimento.com.br;993;mail.teleatendimento.com.br;465
