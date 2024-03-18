@@ -221,7 +221,7 @@ if(isset($_POST['reply'])){
                     <input class="form-control" placeholder="Cco" value="<?= isset($cco) ? $cco : '' ?>" name="cco">
                 </div>
                 <div class="form-group">
-                    <input class="form-control" maxlength="100" placeholder="Assunto" value="<?= isset($subject) ? $subject : '' ?>" name="subject">
+                    <input class="form-control" maxlength="100" placeholder="Assunto" value="<?= isset($subject) ? $subject : '' ?>" name="subject" required>
                 </div>     
                 <div>    
                     <button id="btnshowtext" style="width: 50%; float: left;" onclick="showtext()" class="btn btn-primary btn-lg" type="button">Texto</button>        
