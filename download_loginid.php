@@ -22,10 +22,10 @@
 
   $msgn = imap_msgno($mailbox_instance, $_GET['id']);
 
-  $partStruct = imap_bodystruct($mailbox_instance, $msgn, $_GET['partNum']);  
+  $part = imap_bodystruct($mailbox_instance, $msgn, $_GET['partNum']);  
   $content = imap_fetchbody($mailbox_instance, $msgn, $_GET['partNum']);
 
-  $encoding = $partStruct->encoding;
+  $encoding = $part->encoding;
   if($encoding == 1){
     $content = imap_8bit($content);
   }
@@ -40,19 +40,23 @@
   }
 
   $filename = "unknown";
-  foreach($part->dparameters as $dparameter){
-    if(strtoupper($dparameter->attribute) == "FILENAME"){
-      $filename = $dparameter->value;
-    }
+  if(isset($part->dparameters)){
+      foreach($part->dparameters as $dparameter){
+          if(strtoupper($dparameter->attribute) == "FILENAME"){
+          $filename = $dparameter->value;
+          }
+      }
   }
 
   if($filename == "unknown"){
-      foreach($part->parameters as $parameter){
-          if(strtoupper($parameter->attribute) == "FILENAME"){
-            $filename = $parameter->value;
+      if(isset($part->parameters)){
+          foreach($part->parameters as $parameter){
+              if(strtoupper($parameter->attribute) == "FILENAME"){
+                  $filename = $parameter->value;
+              }
           }
       }
-  }  
+  } 
 
   $dir = 'attachments/';
   if(!is_dir($dir)){ 
