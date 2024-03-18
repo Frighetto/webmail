@@ -23,11 +23,19 @@
     $content = quoted_printable_decode($content);
   }
 
-  $filename = "file";
-  foreach($partStruct->dparameters as $dparameter){
+  $filename = "unknown";
+  foreach($part->dparameters as $dparameter){
     if(strtoupper($dparameter->attribute) == "FILENAME"){
       $filename = $dparameter->value;
     }
+  }
+
+  if($filename == "unknown"){
+      foreach($part->parameters as $parameter){
+          if(strtoupper($parameter->attribute) == "FILENAME"){
+            $filename = $parameter->value;
+          }
+      }
   } 
 
   $dir = 'attachments/';
