@@ -164,10 +164,25 @@
             } else if (isset($part->disposition)) {
                 if (in_array(strtolower($part->disposition), array('attachment', 'inline'))) {
                     $partStruct = imap_bodystruct($mailbox_instance, $mailNum, $partNum);
-                    $reference = isset($partStruct->id) ? $partStruct->id : "";                    
+                    $reference = isset($partStruct->id) ? $partStruct->id : ""; 
+
+                      $filename = "unknown";
+                      foreach($part->dparameters as $dparameter){
+                        if(strtoupper($dparameter->attribute) == "FILENAME"){
+                          $filename = $dparameter->value;
+                        }
+                      }
+                    
+                      if($filename == "unknown"){
+                          foreach($part->parameters as $parameter){
+                              if(strtoupper($parameter->attribute) == "FILENAME"){
+                                $filename = $parameter->value;
+                              }
+                          }
+                      }
 
                     $attachmentDetails = array(
-                        "name"          => $part->dparameters[0]->value,
+                        "name"          => $filename,
                         "partNum"       => $partNum,
                         "enc"           => $partStruct->encoding,
                         "size"          => $part->bytes,
@@ -182,16 +197,24 @@
                 $partStruct = imap_bodystruct($mailbox_instance, $mailNum, $partNum);
                 $reference = isset($partStruct->id) ? $partStruct->id : "";
                 $disposition = empty($reference) ? 'attachment' : 'inline';                
-                if (isset($part->dparameters[0]->value)){
-                    $name = $part->dparameters[0]->value;
-                } elseif ($part->parameters[0]->value) {
-                    $name = $part->parameters[0]->value;
-                } else {
-                    $name = "unknown";
-                }
+                
+                $filename = "unknown";
+                  foreach($part->dparameters as $dparameter){
+                    if(strtoupper($dparameter->attribute) == "FILENAME"){
+                      $filename = $dparameter->value;
+                    }
+                  }
+                
+                  if($filename == "unknown"){
+                      foreach($part->parameters as $parameter){
+                          if(strtoupper($parameter->attribute) == "FILENAME"){
+                            $filename = $parameter->value;
+                          }
+                      }
+                  }
 
                 $attachmentDetails = array(
-                    "name"          => $name,
+                    "name"          => $filename ,
                     "partNum"       => $partNum,
                     "enc"           => $partStruct->encoding,
                     "size"          => $part->bytes,
