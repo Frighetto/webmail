@@ -16,7 +16,7 @@
         $structure = imap_fetchstructure($mailbox_instance, $msgn);
         $attachments = getAttachments($msgn, $structure);
 
-        echo embedImages($attachments, $body);
+        echo embedImages($msgn, $attachments, $body);
 
         foreach($attachments as $attachment){ 
             $attachment_name = "";
@@ -211,10 +211,10 @@
          * @param array $email
          * @return string
          */
-        function embedImages($attachments, $body) {            
+        function embedImages($msgn, $attachments, $body) {            
             foreach ($attachments as $attachment) {
                 if ($attachment['disposition'] == 'inline' && !empty($attachment['reference'])){
-                    $file = getAttachment($_POST['id'] , $attachment['partNum']);
+                    $file = getAttachment($msgn, $attachment['partNum']);
 
                     $reference = str_replace(array("<", ">"), "", $attachment['reference']);
                     $img_embed = "data:image/" . strtolower($file['type']) . ";base64," . base64_encode($file['content']);
