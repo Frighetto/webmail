@@ -38,7 +38,13 @@
   if($encoding == 4){
     $content = quoted_printable_decode($content);
   }
-  $filename = $partStruct->dparameters[0]->value;  
+
+  $filename = "file";
+  foreach($partStruct->dparameters as $dparameter){
+    if(strtoupper($dparameter->attribute) == "FILENAME"){
+      $filename = $dparameter->value;
+    }
+  }  
 
   $dir = 'attachments/';
   if(!is_dir($dir)){ 
