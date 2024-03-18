@@ -6,10 +6,10 @@
   
   $mailbox = "{" . $_SESSION['imap_server'] . ":" . $_SESSION['imap_port'] . "/imap/ssl/novalidate-cert". "}";  
   $mailbox_instance = imap_open($mailbox . $_GET['folder'], $_SESSION['username'], $_SESSION['password']);
-  $partStruct = imap_bodystruct($mailbox_instance, $_GET['id'], $_GET['partNum']);  
+  $part = imap_bodystruct($mailbox_instance, $_GET['id'], $_GET['partNum']);  
   $content = imap_fetchbody($mailbox_instance, $_GET['id'], $_GET['partNum']);
 
-  $encoding = $partStruct->encoding;
+  $encoding = $part->encoding;
   if($encoding == 1){
     $content = imap_8bit($content);
   }
@@ -22,18 +22,21 @@
   if($encoding == 4){
     $content = quoted_printable_decode($content);
   }
-
   $filename = "unknown";
-  foreach($part->dparameters as $dparameter){
-    if(strtoupper($dparameter->attribute) == "FILENAME"){
-      $filename = $dparameter->value;
-    }
+  if(isset($part->dparameters)){
+      foreach($part->dparameters as $dparameter){
+          if(strtoupper($dparameter->attribute) == "FILENAME"){
+          $filename = $dparameter->value;
+          }
+      }
   }
 
   if($filename == "unknown"){
-      foreach($part->parameters as $parameter){
-          if(strtoupper($parameter->attribute) == "FILENAME"){
-            $filename = $parameter->value;
+      if(isset($part->parameters)){
+          foreach($part->parameters as $parameter){
+              if(strtoupper($parameter->attribute) == "FILENAME"){
+                  $filename = $parameter->value;
+              }
           }
       }
   } 
