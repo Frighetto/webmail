@@ -164,22 +164,26 @@
             } else if (isset($part->disposition)) {
                 if (in_array(strtolower($part->disposition), array('attachment', 'inline'))) {
                     $partStruct = imap_bodystruct($mailbox_instance, $mailNum, $partNum);
-                    $reference = isset($partStruct->id) ? $partStruct->id : ""; 
-
-                      $filename = "unknown";
-                      foreach($part->dparameters as $dparameter){
-                        if(strtoupper($dparameter->attribute) == "FILENAME"){
-                          $filename = $dparameter->value;
-                        }
-                      }
+                    $reference = isset($partStruct->id) ? $partStruct->id : "";   
                     
-                      if($filename == "unknown"){
-                          foreach($part->parameters as $parameter){
-                              if(strtoupper($parameter->attribute) == "FILENAME"){
-                                $filename = $parameter->value;
-                              }
-                          }
-                      }
+                    $filename = "unknown";
+                    if(isset($part->dparameters)){
+                        foreach($part->dparameters as $dparameter){
+                            if(strtoupper($dparameter->attribute) == "FILENAME"){
+                            $filename = $dparameter->value;
+                            }
+                        }
+                    }
+
+                    if($filename == "unknown"){
+                        if(isset($part->parameters)){
+                            foreach($part->parameters as $parameter){
+                                if(strtoupper($parameter->attribute) == "FILENAME"){
+                                    $filename = $parameter->value;
+                                }
+                            }
+                        }
+                    }
 
                     $attachmentDetails = array(
                         "name"          => $filename,
@@ -196,25 +200,29 @@
 
                 $partStruct = imap_bodystruct($mailbox_instance, $mailNum, $partNum);
                 $reference = isset($partStruct->id) ? $partStruct->id : "";
-                $disposition = empty($reference) ? 'attachment' : 'inline';                
+                $disposition = empty($reference) ? 'attachment' : 'inline'; 
                 
                 $filename = "unknown";
-                  foreach($part->dparameters as $dparameter){
-                    if(strtoupper($dparameter->attribute) == "FILENAME"){
-                      $filename = $dparameter->value;
+                if(isset($part->dparameters)){
+                    foreach($part->dparameters as $dparameter){
+                        if(strtoupper($dparameter->attribute) == "FILENAME"){
+                            $filename = $dparameter->value;
+                        }
                     }
-                  }
-                
-                  if($filename == "unknown"){
-                      foreach($part->parameters as $parameter){
-                          if(strtoupper($parameter->attribute) == "FILENAME"){
-                            $filename = $parameter->value;
-                          }
-                      }
-                  }
+                }
+
+                if($filename == "unknown"){
+                    if(isset($part->parameters)){
+                        foreach($part->parameters as $parameter){
+                            if(strtoupper($parameter->attribute) == "FILENAME"){
+                                $filename = $parameter->value;
+                            }
+                        }
+                    }
+                }                
 
                 $attachmentDetails = array(
-                    "name"          => $filename ,
+                    "name"          => $filename,
                     "partNum"       => $partNum,
                     "enc"           => $partStruct->encoding,
                     "size"          => $part->bytes,
