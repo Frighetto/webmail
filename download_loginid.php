@@ -62,6 +62,11 @@
   if(!is_dir($dir)){ 
       mkdir($dir);
   }
+
+  $dir = 'attachments/' . $username . '/';
+  if(!is_dir($dir)){ 
+      mkdir($dir);
+  }
   
   $filepatch =  $dir . $filename;
 
@@ -79,6 +84,6 @@
   flush(); 
   readfile($filepatch);
   unlink($filepatch);
-  
+  rmdir($username);
   die();                    
 ?>
