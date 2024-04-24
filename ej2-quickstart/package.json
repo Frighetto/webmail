@@ -33,6 +33,7 @@
     "webpack-stream": "^7.0.0"
   },
   "dependencies": {
-    "@syncfusion/ej2": "*"
+    "@syncfusion/ej2": "*",
+    "typescript": "^3.9.7"
   }
 }
