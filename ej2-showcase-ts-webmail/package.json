@@ -9,7 +9,10 @@
     "@syncfusion/ej2-angular-richtexteditor": "^24.2.9",
     "browser-sync": "^2.23.6",
     "crossroads": "^0.12.2",
-    "hasher": "^1.2.0"
+    "hasher": "^1.2.0",
+    "graceful-fs": {
+      "version": "4.2.2"
+    }
   },
   "devDependencies": {
     "@types/chai": "^3.4.28",
