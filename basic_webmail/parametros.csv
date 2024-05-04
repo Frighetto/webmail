@@ -1,0 +1,4 @@
+domain;imap_server;imap_port;smtp_server;smtp_port
+gmail.com;imap.gmail.com;993;smtp.gmail.com;465
+hotmail.com;outlook.office365.com;993;smtp-mail.outlook.com;587
+teleatendimento.com.br;mail.teleatendimento.com.br;993;mail.teleatendimento.com.br;465
